@@ -1,6 +1,7 @@
 *.pyc
 .pytest_cache
 .vscode
+.tox
 build
 dist
 __pycache__
