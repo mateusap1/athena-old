@@ -3,17 +3,23 @@ import hashlib
 import json
 import requests
 import pickle
+import sys
 
 from uuid import uuid4
 from urllib.parse import urlparse
 
 from Block import Block
+from Transaction import Transaction
 from config import config
 
 
+FILE_NAME = "blockchain.ath"
+
 class Blockchain(object):
 
-    def __init__(self):
+    def __init__(self, store_object = True):
+        self.store_object = store_object
+
         self.transactions = []
         self.chain = []
         self.create_block(proof = 1, previous_hash = "0") # Genesis block
@@ -21,9 +27,10 @@ class Blockchain(object):
         self.mine_delay = 120 # Interval in seconds between the creation of two blocks that should be aproached
         self.difficulty = 4 # The number of leading zeros necessary to the hash
 
-        # Creating file where the blockchain object will be stored
-        with open(f"{config['blockchain_path']}/blockchain.djs", "wb") as blockchain_file:
-            pickle.dump(self, blockchain_file)
+        if self.store_object:
+            # Creating file where the blockchain object will be stored
+            with open(f"{config['blockchain_path']}/{FILE_NAME}", "wb") as blockchain_file:
+                pickle.dump(self, blockchain_file)
     
     def create_block(self, proof, previous_hash):
         block = Block(
@@ -37,9 +44,10 @@ class Blockchain(object):
         self.transactions = []
         self.chain.append(block)
 
-        # Saving recent version of the blockchain
-        with open(f"{config['blockchain_path']}/blockchain.djs", "wb") as blockchain_file:
-            pickle.dump(self, blockchain_file)
+        if self.store_object:
+            # Saving recent version of the blockchain
+            with open(f"{config['blockchain_path']}/{FILE_NAME}", "wb") as blockchain_file:
+                pickle.dump(self, blockchain_file)
 
         return block
     
@@ -66,10 +74,10 @@ class Blockchain(object):
         if (float(total_time_spent) * 16) < self.mine_delay:
             self.difficulty = current_difficulty + 1
         
-            with open(f"{config['blockchain_path']}/blockchain.djs", "wb") as blockchain_file:
-                pickle.dump(self, blockchain_file)
+            if self.store_object:
+                with open(f"{config['blockchain_path']}/{FILE_NAME}", "wb") as blockchain_file:
+                    pickle.dump(self, blockchain_file)
 
-        print(self.difficulty)
         return self.difficulty
     
     def proof_of_work(self, previous_proof):
@@ -82,7 +90,6 @@ class Blockchain(object):
             hash_operation = hashlib.sha256(str(new_proof**2 - previous_proof**2).encode()).hexdigest()
             
             if hash_operation[:difficulty] == "0" * difficulty:
-                print(hash_operation)
                 check_proof = True
             else:
                 new_proof += 1
@@ -101,6 +108,9 @@ class Blockchain(object):
             if block.previous_hash != previous_block.get_hash():
                 return False
             
+            if not block.is_valid():
+                return False
+            
             previous_proof = previous_block.proof
             proof = block.proof
             hash_operation = hashlib.sha256(str(proof**2 - previous_proof**2).encode()).hexdigest()
@@ -113,14 +123,25 @@ class Blockchain(object):
         
         return True
     
-    def add_transaction(self, transaction_type, data):
-        self.transactions.append({
-            "transaction_type": transaction_type,
-            "data": data
-        })
+    def add_transaction(self, sender, transaction_type, data, fee, signature):
+        transaction_types = ["contract", "trial"]
+        if not transaction_type in transaction_types:
+            raise Exception("Transaction type must be either \"contract\" or \"trial\"")
+            return
+        
+        transaction = Transaction(
+            sender = sender,
+            transaction_type = transaction_type,
+            data = data,
+            fee = fee,
+            signature = signature
+        )
 
-        with open(f"{config['blockchain_path']}/blockchain.djs", "wb") as blockchain_file:
-            pickle.dump(self, blockchain_file)
+        self.transactions.append(transaction)
+
+        if self.store_object:
+            with open(f"{config['blockchain_path']}/{FILE_NAME}", "wb") as blockchain_file:
+                pickle.dump(self, blockchain_file)
 
         previous_block = self.get_previous_block()
 
@@ -130,8 +151,9 @@ class Blockchain(object):
         parsed_url = urlparse(address)
         self.nodes.add(parsed_url.netloc)
 
-        with open(f"{config['blockchain_path']}/blockchain.djs", "wb") as blockchain_file:
-            pickle.dump(self, blockchain_file)
+        if self.store_object:
+            with open(f"{config['blockchain_path']}/{FILE_NAME}", "wb") as blockchain_file:
+                pickle.dump(self, blockchain_file)
     
     def replace_chain(self):
         network = self.nodes
@@ -152,14 +174,15 @@ class Blockchain(object):
         if longest_chain:
             self.chain = longest_chain
 
-            with open(f"{config['blockchain_path']}//blockchain.djs", "wb") as blockchain_file:
-                pickle.dump(self, blockchain_file)
+            if self.store_object:
+                with open(f"{config['blockchain_path']}//{FILE_NAME}", "wb") as blockchain_file:
+                    pickle.dump(self, blockchain_file)
 
             return True
         
         return False
     
-    def get_json(self):
+    def get_dict_list(self):
         return [block.get_dict() for block in self.chain]
     
     # Transforming json chain into blockchain
