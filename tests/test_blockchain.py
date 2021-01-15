@@ -6,7 +6,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
 
 from Blockchain import Blockchain
 from Block import Block
-from Wallet.Wallet import Wallet
+from wallet.Wallet import Wallet
 
 
 wallet = Wallet()

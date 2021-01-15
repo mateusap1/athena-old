@@ -5,7 +5,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
 
 from Blockchain import Blockchain
 from Transaction import Transaction
-from Wallet.Wallet import Wallet
+from wallet.Wallet import Wallet
 
 import pytest
 
@@ -13,7 +13,7 @@ import pytest
 wallet = Wallet()
 
 # Checking if the transaction insertion is failing when the paramaters are wrong
-def test_transaction_fail():
+def test_transaction_fail_1():
     blockchain = Blockchain(False)
 
     sender = wallet.public_key
@@ -29,6 +29,25 @@ def test_transaction_fail():
         blockchain.add_transaction(sender, transaction_type, data, fee, signature)
 
     assert str(e.value) == "Transaction type must be either \"contract\" or \"trial\""
+
+# Checking if the transaction insertion is failing when Transaction content is altered
+def test_transaction_fail_2():
+    blockchain = Blockchain(False)
+
+    sender = wallet.public_key
+    transaction_type = "contract"
+    data = {"Test": 2}
+    fee = {
+        "value": 3,
+        "receipt": "<receipt>"
+    }
+    signature = wallet.sign_transaction(sender, transaction_type, data, fee)
+    fee["value"] = 100
+
+    with pytest.raises(Exception) as e:
+        blockchain.add_transaction(sender, transaction_type, data, fee, signature)
+
+    assert str(e.value) == "Transaction signature does not match content"
 
 # Checking if the transactions being inserted into the list
 def test_transaction_succeed():
@@ -67,7 +86,7 @@ def test_transaction_succeed():
 
     assert Transaction.get_dict_list(blockchain.transactions) == transactions
 
-def test_max_transactions1():
+def test_max_transactions_1():
     blockchain = Blockchain(False)
 
     sender = wallet.public_key
@@ -99,7 +118,7 @@ def test_max_transactions1():
 
     assert Transaction.get_dict_list(new_transactions) == correct_transactions
 
-def test_max_transactions2():
+def test_max_transactions_2():
     blockchain = Blockchain(False)
 
     sender = wallet.public_key
