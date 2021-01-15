@@ -129,18 +129,19 @@ def test_max_transactions_2():
 
     for i in range(5):
         if i == 4:
-            transaction_type = "fail"
+            transaction_type = "Fail"
 
         data = {
             "test": i
         }
 
         fee = {
-            "value": numbers[i],
+            "value": int(numbers[i]),
             "receipt": "<receipt>"
         }
 
         signature = wallet.sign_transaction(sender, transaction_type, data, fee)
+
         transactions.append((sender, transaction_type, data, fee, signature))
         blockchain.transactions.append(Transaction(*transactions[i]))
 
