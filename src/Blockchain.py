@@ -9,6 +9,7 @@ from uuid import uuid4
 from urllib.parse import urlparse
 
 from Block import Block
+from wallet.Wallet import Wallet
 from Transaction import Transaction
 from config import config
 
@@ -136,6 +137,10 @@ class Blockchain(object):
             fee = fee,
             signature = signature
         )
+
+        if not Wallet.verify_transaction(transaction):
+            raise Exception("Transaction signature does not match content")
+            return
 
         self.transactions.append(transaction)
 

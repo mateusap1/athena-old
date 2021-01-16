@@ -3,7 +3,7 @@ import hashlib
 
 from utils import block_utils
 
-BLOCK_SIZE_LIMIT = 10**5 # Block limit in bytes (max of 616 transactions in avarege)
+BLOCK_SIZE_LIMIT = 10**6 # Block limit in bytes (max of 616 transactions in avarege)
 
 class Block(object):
     def __init__(self, index, timestamp, transactions, proof, previous_hash):
@@ -29,8 +29,15 @@ class Block(object):
     
     def is_valid(self):
         block_size = block_utils.get_size(self)
+
+        if block_size > BLOCK_SIZE_LIMIT:
+            return False
         
-        return block_size < BLOCK_SIZE_LIMIT
+        for transaction in self.transactions:
+            if not transaction.is_valid():
+                return False
+        
+        return True
     
     @staticmethod
     def dict_to_object(dict_version):

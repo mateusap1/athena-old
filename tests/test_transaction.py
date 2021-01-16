@@ -6,11 +6,25 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
 from Blockchain import Blockchain
 from Transaction import Transaction
 from wallet.Wallet import Wallet
+from bit import PrivateKey, PrivateKeyTestnet, verify_sig
 
 import pytest
 
 
 wallet = Wallet()
+
+def test_receipt_creation():
+    priv = PrivateKeyTestnet()
+    receipt = Transaction.create_receipt(priv.to_wif())
+    
+    assert verify_sig(receipt["signature"], str(receipt["sender_address"]).encode(), priv.public_key) == True
+
+def test_receipt_falsification():
+    priv1 = PrivateKeyTestnet()
+    priv2 = PrivateKeyTestnet()
+    receipt = Transaction.create_receipt(priv2.to_wif())
+    
+    assert verify_sig(receipt["signature"], str(receipt["sender_address"]).encode(), priv1.public_key) == False
 
 # Checking if the transaction insertion is failing when the paramaters are wrong
 def test_transaction_fail_1():
@@ -21,7 +35,11 @@ def test_transaction_fail_1():
     data = {"Test": 2}
     fee = {
         "value": 3,
-        "receipt": "<receipt>"
+        "receipt": {
+            "sender_address": "<sender_address>",
+            "miner_address": "<miner_address>",
+            "signature": "<signature>"
+        }
     }
     signature = wallet.sign_transaction(sender, transaction_type, data, fee)
 
@@ -39,7 +57,11 @@ def test_transaction_fail_2():
     data = {"Test": 2}
     fee = {
         "value": 3,
-        "receipt": "<receipt>"
+        "receipt": {
+            "sender_address": "<sender_address>",
+            "miner_address": "<miner_address>",
+            "signature": "<signature>"
+        }
     }
     signature = wallet.sign_transaction(sender, transaction_type, data, fee)
     fee["value"] = 100
@@ -68,7 +90,11 @@ def test_transaction_succeed():
     }
     fee = {
         "value": 3,
-        "signature": "<signature>"
+        "receipt": {
+            "sender_address": "<sender_address>",
+            "miner_address": "<miner_address>",
+            "signature": "<signature>"
+        }
     }
 
     transactions = []
@@ -101,7 +127,11 @@ def test_max_transactions_1():
         }
         fee = {
             "value": numbers[i],
-            "receipt": "<receipt>"
+            "receipt": {
+                "sender_address": "<sender_address>",
+                "miner_address": "<miner_address>",
+                "signature": "<signature>"
+            }
         }
 
         signature = wallet.sign_transaction(sender, transaction_type, data, fee)
@@ -137,7 +167,11 @@ def test_max_transactions_2():
 
         fee = {
             "value": int(numbers[i]),
-            "receipt": "<receipt>"
+            "receipt": {
+                "sender_address": "<sender_address>",
+                "miner_address": "<miner_address>",
+                "signature": "<signature>"
+            }
         }
 
         signature = wallet.sign_transaction(sender, transaction_type, data, fee)

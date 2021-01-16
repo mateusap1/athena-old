@@ -7,7 +7,7 @@ from uuid import uuid4
 from urllib.parse import urlparse
 
 from Blockchain import Blockchain
-from Wallet.Wallet import Wallet
+from wallet.Wallet import Wallet
 from config import config
 
 

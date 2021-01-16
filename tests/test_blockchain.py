@@ -60,33 +60,3 @@ def test_difficulty_adapter2():
     chain = [Block(1, "2018-12-04 09:41:09.0", [], 1, 1), Block(1, "2018-12-04 09:41:17.0", [], new_proof, "00000a")]
     blockchain.chain = chain
     assert blockchain.get_mining_difficulty() == 4
-
-def test_block_validation():
-    blockchain = Blockchain(False)
-
-    sender = wallet.public_key
-
-    transaction = [
-        sender,
-        "contract", 
-        {"test": 0}, 
-        {
-            "value": 8,
-            "receipt": "<receipt>"
-        }
-    ]
-
-    signature = wallet.sign_transaction(*transaction)
-    transaction.append(signature)
-
-    for i in range(1000):
-        blockchain.add_transaction(*transaction)
-    
-    previous_block = blockchain.get_previous_block()
-    previous_proof = previous_block.proof
-    proof = blockchain.proof_of_work(previous_proof)
-    previous_hash = previous_block.get_hash()
-
-    block = blockchain.create_block(proof, previous_hash)
-
-    assert block.is_valid() == False
