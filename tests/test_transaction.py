@@ -4,187 +4,156 @@ import os
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
 
 from Blockchain import Blockchain
-from Transaction import Transaction
+from transaction.Transaction import Transaction
+from transaction.Payment import Payment
+from transaction.Contract import Contract
+from transaction.Acusation import Acusation
 from wallet.Wallet import Wallet
 from bit import PrivateKey, PrivateKeyTestnet, verify_sig
 
 import pytest
 
-
+# Initializing wallet so we can have a testing public and private key
 wallet = Wallet()
 
-def test_receipt_creation():
-    priv = PrivateKeyTestnet()
-    receipt = Transaction.create_receipt(priv.to_wif())
-    
-    assert verify_sig(receipt["signature"], str(receipt["sender_address"]).encode(), priv.public_key) == True
-
-def test_receipt_falsification():
-    priv1 = PrivateKeyTestnet()
-    priv2 = PrivateKeyTestnet()
-    receipt = Transaction.create_receipt(priv2.to_wif())
-    
-    assert verify_sig(receipt["signature"], str(receipt["sender_address"]).encode(), priv1.public_key) == False
-
-# Checking if the transaction insertion is failing when the paramaters are wrong
-def test_transaction_fail_1():
+def test_payment():
     blockchain = Blockchain(False)
 
     sender = wallet.public_key
-    transaction_type = "Fail"
-    data = {"Test": 2}
-    fee = {
-        "value": 3,
-        "receipt": {
-            "sender_address": "<sender_address>",
-            "miner_address": "<miner_address>",
-            "signature": "<signature>"
-        }
-    }
-    signature = wallet.sign_transaction(sender, transaction_type, data, fee)
+    fee = 3
+    amount = 1
+    receiver = "<receiver>"
+
+    transaction = Payment(sender, fee, amount, receiver)
+    signature = wallet.sign_transaction(transaction)
+
+    assert transaction.is_valid(blockchain) == False
+
+    fee = -3
+
+    transaction = Payment(sender, fee, amount, receiver)
+    signature = wallet.sign_transaction(transaction)
+
+    assert transaction.is_valid(blockchain) == False
+
+    fee = 0
+    amount = -1
+
+    transaction = Payment(sender, fee, amount, receiver)
+    signature = wallet.sign_transaction(transaction)
+
+    assert transaction.is_valid(blockchain) == False
 
     with pytest.raises(Exception) as e:
-        blockchain.add_transaction(sender, transaction_type, data, fee, signature)
+        blockchain.add_transaction(transaction)
 
-    assert str(e.value) == "Transaction type must be either \"contract\" or \"trial\""
+    assert str(e.value) == "Transaction is invalid"
 
-# Checking if the transaction insertion is failing when Transaction content is altered
-def test_transaction_fail_2():
-    blockchain = Blockchain(False)
+    receiver = "<my_other_wallet>"
 
-    sender = wallet.public_key
-    transaction_type = "contract"
-    data = {"Test": 2}
-    fee = {
-        "value": 3,
-        "receipt": {
-            "sender_address": "<sender_address>",
-            "miner_address": "<miner_address>",
-            "signature": "<signature>"
-        }
-    }
-    signature = wallet.sign_transaction(sender, transaction_type, data, fee)
-    fee["value"] = 100
+    transaction = Payment(sender, fee, amount, receiver)
+    transaction.sign(signature)
 
     with pytest.raises(Exception) as e:
-        blockchain.add_transaction(sender, transaction_type, data, fee, signature)
+        blockchain.add_transaction(transaction)
 
-    assert str(e.value) == "Transaction signature does not match content"
+    assert str(e.value) == "Transaction is invalid"
 
-# Checking if the transactions being inserted into the list
-def test_transaction_succeed():
+    fee = 0
+    amount = 0
+    receiver = "<receiver>"
+
+    transaction = Payment(sender, fee, amount, receiver)
+    signature = wallet.sign_transaction(transaction)
+
+    assert transaction.is_valid(blockchain) == True
+
+def test_contract():
+    """Testing if contract transactions are working"""
+
     blockchain = Blockchain(False)
 
     sender = wallet.public_key
-    transaction_types = ["contract", "trial"]
-    data = {
-        "content": [
-            {
-                "rule": "You shall not kill",
-                "punishment": "Be killed"
-            }
-        ],
-        "signatures": [
-            "sfddsafsdfds234fsdf23rf"
-        ]
-    }
-    fee = {
-        "value": 3,
-        "receipt": {
-            "sender_address": "<sender_address>",
-            "miner_address": "<miner_address>",
-            "signature": "<signature>"
-        }
-    }
+    fee = 0
+    content = ["You shall not kill"]
 
-    transactions = []
-    for transaction_type in transaction_types:
-        signature = wallet.sign_transaction(sender, transaction_type, data, fee)
-        
-        blockchain.add_transaction(sender, transaction_type, data, fee, signature)
-        transactions.append(Transaction(
-            sender = sender,
-            transaction_type = transaction_type,
-            data = data,
-            fee = fee,
-            signature = signature
-        ).get_dict())
+    transaction = Contract(sender, fee, content)
+    signature = wallet.sign_transaction(transaction)
+    assert transaction.is_valid(blockchain) == True
 
-    assert Transaction.get_dict_list(blockchain.transactions) == transactions
+    transaction.sign_contract(wallet.private_key)
+    signature = wallet.sign_transaction(transaction)
+    assert transaction.is_valid(blockchain) == True
+    assert len(transaction.contract_signatures) > 0
+    assert transaction.verify_signature(wallet.public_key) == True
 
-def test_max_transactions_1():
+    wallet2 = Wallet()
+    assert transaction.verify_signature(wallet2.public_key) == False
+
+    fee = 1
+    transaction = Contract(sender, fee, content)
+    signature = wallet.sign_transaction(transaction)
+    assert transaction.is_valid(blockchain) == False
+
+    fee = -1
+    transaction = Contract(sender, fee, content)
+    signature = wallet.sign_transaction(transaction)
+    assert transaction.is_valid(blockchain) == False
+
+
+
+def test_max_transactions():
+    """Tesing if 'Transaction' method 'max_transaction()' is working properly"""
+
     blockchain = Blockchain(False)
 
-    sender = wallet.public_key
-    numbers = "85697"
-    transaction_type = "contract"
-
-    transactions = []
-
-    for i in range(5):
-        data = {
-            "test": i
-        }
-        fee = {
-            "value": numbers[i],
-            "receipt": {
-                "sender_address": "<sender_address>",
-                "miner_address": "<miner_address>",
-                "signature": "<signature>"
-            }
-        }
-
-        signature = wallet.sign_transaction(sender, transaction_type, data, fee)
-        transactions.append((sender, transaction_type, data, fee, signature))
-
-        blockchain.add_transaction(*transactions[i])
-
-    new_transactions = Transaction.max_transactions(blockchain.transactions)
-    correct_transactions = []
-
-    transactions.sort(key = lambda x : x[3]["value"], reverse = True)
-    for transaction in transactions:
-        correct_transactions.append(Transaction(*transaction).get_dict())
-
-    assert Transaction.get_dict_list(new_transactions) == correct_transactions
-
-def test_max_transactions_2():
-    blockchain = Blockchain(False)
+    expected_output = []
 
     sender = wallet.public_key
-    numbers = "85697"
-    transaction_type = "contract"
+    fee = 3
+    amount = 1
+    receiver = "<receiver>"
 
-    transactions = []
+    transaction = Payment(sender, fee, amount, receiver)
+    signature = wallet.sign_transaction(transaction)
 
-    for i in range(5):
-        if i == 4:
-            transaction_type = "Fail"
+    # Adding a "malicious" transaction to the list
+    blockchain.transactions.append(transaction)
 
-        data = {
-            "test": i
-        }
+    sender = wallet.public_key
+    fee = 0
+    amount = 0
+    receiver = "<receiver>"
 
-        fee = {
-            "value": int(numbers[i]),
-            "receipt": {
-                "sender_address": "<sender_address>",
-                "miner_address": "<miner_address>",
-                "signature": "<signature>"
-            }
-        }
+    transaction = Payment(sender, fee, amount, receiver)
+    signature = wallet.sign_transaction(transaction)
 
-        signature = wallet.sign_transaction(sender, transaction_type, data, fee)
+    # Adding a real transaction to the list
+    blockchain.add_transaction(transaction)
+    expected_output.append(transaction)
 
-        transactions.append((sender, transaction_type, data, fee, signature))
-        blockchain.transactions.append(Transaction(*transactions[i]))
+    sender = wallet.public_key
+    fee = 0
+    amount = 0
+    receiver = "<receiver>"
 
-    new_transactions = Transaction.max_transactions(blockchain.transactions)
-    correct_transactions = []
+    transaction = Payment(sender, fee, amount, receiver)
+    transaction.signature = signature # False signature
 
-    transactions.sort(key = lambda x : x[3]["value"], reverse = True)
-    for transaction in transactions:
-        if transaction[1] == "contract":
-            correct_transactions.append(Transaction(*transaction).get_dict())
+    # Adding another "malicious" transaction to the list
+    blockchain.transactions.append(transaction)
 
-    assert Transaction.get_dict_list(new_transactions) == correct_transactions
+    sender = wallet.public_key
+    fee = 0
+    content = ["You shall not kill"]
+
+    transaction = Contract(sender, fee, content)
+    signature = wallet.sign_transaction(transaction)
+
+    # Adding another real transaction to the list
+    blockchain.add_transaction(transaction)
+    expected_output.append(transaction)
+
+    expected_output.sort(key = lambda x : x.fee, reverse = True)
+
+    assert Transaction.max_transactions(blockchain) == expected_output

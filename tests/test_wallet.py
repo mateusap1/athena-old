@@ -38,7 +38,7 @@ def test_verify_transaction_fail():
         "receipt": "<receipt>"
     }
     signature = wallet.sign_transaction(sender, transaction_type, data, fee)
-    fee["value"] = 100
+    fee = 100
 
     transaction = Transaction(sender, transaction_type, data, fee, signature)
 
