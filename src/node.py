@@ -24,12 +24,16 @@ except IOError:
 # Creating an address to the node
 node_address = str(uuid4()).replace("-", "")
 
+wallet = Wallet()
+
 @app.route("/mine_block", methods = ["GET"])
 def mine_block():
     previous_block = blockchain.get_previous_block()
     previous_proof = previous_block.proof
     proof = blockchain.proof_of_work(previous_proof)
     previous_hash = previous_block.get_hash()
+
+    # blockchain.add_transaction(wallet.public_key, "payment", )
 
     block = blockchain.create_block(proof, previous_hash)
     response = {"message": "Block mined successfully!", 

@@ -22,20 +22,30 @@ class Block(object):
         return {
             "index": self.index,
             "timestamp": self.timestamp,
-            "transactions": self.transactions,
+            "transactions": [transaction.to_dict() for transaction in self.transactions],
             "proof": self.proof,
             "previous_hash": self.previous_hash
         }
     
-    def is_valid(self):
+    def is_valid(self, blockchain):
         block_size = block_utils.get_size(self)
 
         if block_size > BLOCK_SIZE_LIMIT:
             return False
         
-        for transaction in self.transactions:
-            if not transaction.is_valid():
+        # The first transaction is the miner reward + fees
+        first_transaction = self.transactions[0]
+        total_amount = blockchain.get_current_reward()
+        
+        for transaction in self.transactions[1:]:
+            if not transaction.is_valid(blockchain):
                 return False
+
+            total_amount += transaction.fee
+
+        # If the first transaction amount wasn't the miner reward + fees the block is not valid
+        if first_transaction.amount != total_amount:
+            return False
         
         return True
     

@@ -10,11 +10,14 @@ from urllib.parse import urlparse
 
 from Block import Block
 from wallet.Wallet import Wallet
-from Transaction import Transaction
+from transaction.Payment import Payment
+# from transaction.Transaction import Transaction
 from config import config
 
 
-FILE_NAME = "blockchain.ath"
+FILE_NAME = config["file_name"]
+FILE_PATH = config['blockchain_path']
+FILE_FULL_PATH = f"{FILE_PATH}/{FILE_NAME}"
 
 class Blockchain(object):
 
@@ -30,7 +33,7 @@ class Blockchain(object):
 
         if self.store_object:
             # Creating file where the blockchain object will be stored
-            with open(f"{config['blockchain_path']}/{FILE_NAME}", "wb") as blockchain_file:
+            with open(FILE_FULL_PATH, "wb") as blockchain_file:
                 pickle.dump(self, blockchain_file)
     
     def create_block(self, proof, previous_hash):
@@ -47,7 +50,7 @@ class Blockchain(object):
 
         if self.store_object:
             # Saving recent version of the blockchain
-            with open(f"{config['blockchain_path']}/{FILE_NAME}", "wb") as blockchain_file:
+            with open(FILE_FULL_PATH, "wb") as blockchain_file:
                 pickle.dump(self, blockchain_file)
 
         return block
@@ -76,10 +79,13 @@ class Blockchain(object):
             self.difficulty = current_difficulty + 1
         
             if self.store_object:
-                with open(f"{config['blockchain_path']}/{FILE_NAME}", "wb") as blockchain_file:
+                with open(FILE_FULL_PATH, "wb") as blockchain_file:
                     pickle.dump(self, blockchain_file)
 
         return self.difficulty
+    
+    def get_current_reward(self):
+        return 100
     
     def proof_of_work(self, previous_proof):
         new_proof = 1
@@ -109,7 +115,7 @@ class Blockchain(object):
             if block.previous_hash != previous_block.get_hash():
                 return False
             
-            if not block.is_valid():
+            if not block.is_valid(self):
                 return False
             
             previous_proof = previous_block.proof
@@ -124,40 +130,40 @@ class Blockchain(object):
         
         return True
     
-    def add_transaction(self, sender, transaction_type, data, fee, signature):
-        transaction_types = ["contract", "trial"]
-        if not transaction_type in transaction_types:
-            raise Exception("Transaction type must be either \"contract\" or \"trial\"")
-            return
-        
-        transaction = Transaction(
-            sender = sender,
-            transaction_type = transaction_type,
-            data = data,
-            fee = fee,
-            signature = signature
-        )
-
-        if not Wallet.verify_transaction(transaction):
-            raise Exception("Transaction signature does not match content")
-            return
+    def add_transaction(self, transaction):        
+        if not transaction.is_valid(self) and len(self.transactions) > 0:
+            raise Exception("Transaction is invalid")
+            return previous_block.index
 
         self.transactions.append(transaction)
 
         if self.store_object:
-            with open(f"{config['blockchain_path']}/{FILE_NAME}", "wb") as blockchain_file:
+            with open(FILE_FULL_PATH, "wb") as blockchain_file:
                 pickle.dump(self, blockchain_file)
 
         previous_block = self.get_previous_block()
 
         return previous_block.index + 1
     
+    def get_balance(self, public_key, block_index, transaction_index):
+        balance = 0
+        for block in self.chain[:block_index+1]:
+            for transaction in block.transactions[:transaction_index]:
+                if isinstance(transaction, Payment):
+                    if transaction.receiver == public_key:
+                        balance += transaction.amount
+                    elif transaction.sender == public_key:
+                        balance -= transaction.amount
+                        balance -= transaction.fee
+        
+        return balance
+    
     def add_node(self, address):
         parsed_url = urlparse(address)
         self.nodes.add(parsed_url.netloc)
 
         if self.store_object:
-            with open(f"{config['blockchain_path']}/{FILE_NAME}", "wb") as blockchain_file:
+            with open(FILE_FULL_PATH, "wb") as blockchain_file:
                 pickle.dump(self, blockchain_file)
     
     def replace_chain(self):
