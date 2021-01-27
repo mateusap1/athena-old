@@ -1,2 +1,2 @@
-# athenas
-A decentralized justice system that uses blockchain technology
+# Athena
+Athenas is a blockchain based justice system, which main focus is to offer a decentralized solution to conflicts that may occur inside a community. The target audience is any group of people that, for their mutual benefit, agreed to follow a set of rules and want to have a way of moderating possible conflicts.
