@@ -20,7 +20,7 @@ It’s the class that will be used to initialize the blockchain it self. When in
     * Returns the last block of the current chain
 
 * ### get_mining_difficulty
-    * Calculates the number of leading zeros that approaches the time goal of mining one block each 120 seconds
+    * Calculates the number of leading zeros that approaches the time goal of mining one block each 120 seconds. The number of leading zeros necessary to make a valid hash should be increased by one every time a block is mined in less then *N* / 16 seconds where *N* is the ideal time difference between blocks.
 
     * Returns the mining difficulty
 
