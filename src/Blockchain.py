@@ -87,54 +87,25 @@ class Blockchain(object):
     def get_current_reward(self):
         return 100
     
-    def proof_of_work(self, previous_proof):
+    def proof_of_work(self, previous_proof: int) -> int:
+        # TODO: Make the proof of work differ when the timestamp is changed
+        if previous_proof > 2 ** 32 or previous_proof < 0:
+            raise Exception("previous_proof must be a positive integer with maximum size of 32 bits")
+
         new_proof = 1
         check_proof = False
-
-        difficulty = self.get_mining_difficulty()
 
         while check_proof is False:
             hash_operation = hashlib.sha256(str(new_proof**2 - previous_proof**2).encode()).hexdigest()
             
-            if hash_operation[:difficulty] == "0" * difficulty:
+            if hash_operation[:self.difficulty] == "0" * self.difficulty:
                 check_proof = True
             else:
                 new_proof += 1
         
         return new_proof
     
-    def is_chain_valid(self, chain):
-        previous_block = chain[0]
-        block_index = 1
-
-        difficulty = self.get_mining_difficulty()
-
-        while block_index < len(chain):
-            block = chain[block_index]
-
-            if block.previous_hash != previous_block.get_hash():
-                return False
-            
-            if not block.is_valid(self):
-                return False
-            
-            previous_proof = previous_block.proof
-            proof = block.proof
-            hash_operation = hashlib.sha256(str(proof**2 - previous_proof**2).encode()).hexdigest()
-
-            if hash_operation[:difficulty] != "0" * difficulty:
-                return False
-            
-            previous_block = block
-            block_index += 1
-        
-        return True
-    
-    def add_transaction(self, transaction):        
-        if not transaction.is_valid(self) and len(self.transactions) > 0:
-            raise Exception("Transaction is invalid")
-            return previous_block.index
-
+    def add_transaction(self, transaction):
         self.transactions.append(transaction)
 
         if self.store_object:
@@ -145,10 +116,10 @@ class Blockchain(object):
 
         return previous_block.index + 1
     
-    def get_balance(self, public_key, block_index, transaction_index):
+    def get_balance(self, public_key):
         balance = 0
-        for block in self.chain[:block_index+1]:
-            for transaction in block.transactions[:transaction_index]:
+        for block in self.chain:
+            for transaction in block.transactions:
                 if isinstance(transaction, Payment):
                     if transaction.receiver == public_key:
                         balance += transaction.amount
@@ -196,7 +167,6 @@ class Blockchain(object):
     def get_dict_list(self):
         return [block.get_dict() for block in self.chain]
     
-    # Transforming json chain into blockchain
     @staticmethod
     def json_to_object(chain):
         return [Block.dict_to_object(json.loads(block)) for block in chain]

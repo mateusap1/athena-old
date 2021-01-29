@@ -50,7 +50,34 @@ def get_chain():
 
 @app.route("/is_valid", methods = ["GET"])
 def is_valid():
-    is_valid = blockchain.is_chain_valid(blockchain.chain)
+    chain = blockchain.chain
+    previous_block = chain[0]
+    block_index = 1
+
+    difficulty = self.get_mining_difficulty()
+
+    is_valid = True
+    while block_index < len(chain):
+        block = chain[block_index]
+
+        if block.previous_hash != previous_block.get_hash():
+            is_valid = False
+            break
+        
+        if not block.is_valid(self):
+            is_valid = False
+            break
+        
+        previous_proof = previous_block.proof
+        proof = block.proof
+        hash_operation = hashlib.sha256(str(proof**2 - previous_proof**2).encode()).hexdigest()
+
+        if hash_operation[:difficulty] != "0" * difficulty:
+            is_valid = False
+            break
+        
+        previous_block = block
+        block_index += 1
 
     if is_valid:
         response = {"message": "The chain is valid."}
