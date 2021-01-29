@@ -14,20 +14,21 @@ class Wallet:
         self.private_key = None
         self.public_key = None
         self.create_keys()
+    
+    @staticmethod
+    def generate_keys():
+        """Generating a new pair of private and public key"""
+
+        private_key = RSA.generate(1024, Crypto.Random.new().read)
+        public_key = private_key.publickey()
+
+        return (binascii.hexlify(private_key.exportKey(format='DER')).decode('ascii'), binascii.hexlify(public_key.exportKey(format='DER')).decode('ascii'))
 
     # Create a new pair of private and public keys
     def create_keys(self):
         private_key, public_key = Wallet.generate_keys()
         self.private_key = private_key
         self.public_key = public_key
-
-    # Generate a new pair of private and public key
-    @staticmethod
-    def generate_keys():
-        private_key = RSA.generate(1024, Crypto.Random.new().read)
-        public_key = private_key.publickey()
-
-        return (binascii.hexlify(private_key.exportKey(format='DER')).decode('ascii'), binascii.hexlify(public_key.exportKey(format='DER')).decode('ascii'))
 
     # Sign a transaction and return the signature
     # RSA is a cryptography algorithm
