@@ -1,6 +1,14 @@
 ## Transactions
 
-The transactions are what make Athena a justice system and not just a meaningless piece of technology. There are three types of transactions: The payment, the contract and the judgement.
+The transactions are what make Athena a justice system and not just a meaningless piece of technology. There are six types of transactions: 
+* [Payment](#payment)
+* [Contract](#contract)
+* [Recon](#recon)
+* [Accusation](#accusation)
+* [Defense](#defense)
+* [Veredict](#veredict)
+
+<a name="payment"/>
 
 * ## Payment
 
@@ -19,6 +27,8 @@ The transactions are what make Athena a justice system and not just a meaningles
         * ### get_content
             * Returns everything except the signature and the hash on a dictionary format
 
+<a name="contract"/>
+
 * ## Contract
 
     The contract is basically a set of rules that any person can agree to follow, accepting to be responsible for any rules that he may break in exchange of making part of a community. 
@@ -34,6 +44,8 @@ The transactions are what make Athena a justice system and not just a meaningles
         
         * ### get_content
             * Returns everything except the signature and the hash on a dictionary format
+
+<a name="recon"/>
 
 * ## Recon
 
@@ -51,6 +63,8 @@ The transactions are what make Athena a justice system and not just a meaningles
         
         * ### get_content
             * Returns everything except the signature and the hash on a dictionary format
+
+<a name="accusation"/>
 
 * ## Accusation
 
@@ -72,6 +86,8 @@ The transactions are what make Athena a justice system and not just a meaningles
         * ### get_content
             * Returns everything except the signature and the hash on a dictionary format
 
+<a name="defense"/>
+
 * ## Defense
 
     After being accused by someone of breaking a rule, the user can send a transaction of type *Defense*, choosing a member he thinks will be a good jugde
@@ -88,6 +104,8 @@ The transactions are what make Athena a justice system and not just a meaningles
 
         * ### get_content
             * Returns everything except the signature and the hash on a dictionary format
+
+<a name="veredict"/>
 
 * ## Veredict
 
