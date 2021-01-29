@@ -5,9 +5,8 @@ from Crypto.Hash import SHA256
 import Crypto.Random
 import binascii
 
+# Most part of this code was written by @adi2381 and you can find it here: https://github.com/adi2381/py-blockchain
 
-# I did not write a big part of this class. 
-# I mostly got it from @adi2381 and you can find it here: https://github.com/adi2381/py-blockchain
 class Wallet:
 
     def __init__(self):
@@ -24,20 +23,19 @@ class Wallet:
 
         return (binascii.hexlify(private_key.exportKey(format='DER')).decode('ascii'), binascii.hexlify(public_key.exportKey(format='DER')).decode('ascii'))
 
-    # Create a new pair of private and public keys
     def create_keys(self):
+        """Create a new pair of private and public keys"""
         private_key, public_key = Wallet.generate_keys()
         self.private_key = private_key
         self.public_key = public_key
 
-    # Sign a transaction and return the signature
-    # RSA is a cryptography algorithm
-    # binascii.hexlify is used to convert binary data to hexadecimal representation
     def sign_transaction(self, transaction):
-        signer = PKCS1_v1_5.new(RSA.importKey(binascii.unhexlify(self.private_key)))
+        """Sign a transaction and return the signature"""
+        signer = PKCS1_v1_5.new(RSA.importKey(binascii.unhexlify(self.private_key))) # RSA is a cryptography algorithm
         h = SHA256.new(str(transaction.get_content()).encode('utf8'))
         signature = signer.sign(h)
 
+        # binascii.hexlify is used to convert binary data to hexadecimal representation
         transaction.sign(binascii.hexlify(signature).decode('ascii'))
 
     @staticmethod
