@@ -1,15 +1,16 @@
 from transaction.Transaction import Transaction
+from transaction.Accusation import Accusation
 
 
-class Payment(Transaction):
+class Defense(Transaction):
 
-    def __init__(self, sender: str, fee: float, amount: float, receiver: str):
+    def __init__(self, sender: str, fee: float, accusation: Accusation, judge: str):
         super().__init__(sender, fee)
 
         self.hashing = None
         self.signature = None
-        self.amount = amount
-        self.receiver = receiver
+        self.accusation = accusation
+        self.judge = judge
     
     def to_dict(self) -> dict:
         """Returns 'Transaction' content on a dictionary format"""
@@ -18,8 +19,8 @@ class Payment(Transaction):
             "hash": self.hashing,
             "sender": self.sender,
             "signature": self.signature,
-            "amount": self.amount,
-            "receiver": self.receiver,
+            "accusation": self.accusation.to_dict(),
+            "judge": self.judge,
             "fee": self.fee
         }
     
@@ -28,7 +29,7 @@ class Payment(Transaction):
 
         return {
             "sender": self.sender,
-            "amount": self.amount,
-            "receiver": self.receiver,
+            "accusation": self.accusation.to_dict(),
+            "judge": self.judge,
             "fee": self.fee
         }
