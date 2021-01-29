@@ -5,7 +5,7 @@ import hashlib
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
 
 from Blockchain import Blockchain
-from Transaction import Transaction
+from transaction.Transaction import Transaction
 from wallet.Wallet import Wallet
 
 
