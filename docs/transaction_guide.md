@@ -8,8 +8,6 @@ The transactions are what make Athena a justice system and not just a meaningles
 * [Defense](#defense)
 * [Veredict](#veredict)
 
-<a name="payment"/>
-
 * ## Payment
 
     Even though, the first idea was to use bitcoin or monero as a way of paying miners and judges, it became clear with time that this would not be a good solution as it would create the problem of having to pay "double fees" and could also be a security problem as the Athena software would not have direct access to these blockchains. The solution found was to create its own cryptocurrency, not with the intention of competing in the monetary field, but only to create a stymulus to both miners and judges without having to count on third party forms of payment.
@@ -27,8 +25,6 @@ The transactions are what make Athena a justice system and not just a meaningles
         * ### get_content
             * Returns everything except the signature and the hash on a dictionary format
 
-<a name="contract"/>
-
 * ## Contract
 
     The contract is basically a set of rules that any person can agree to follow, accepting to be responsible for any rules that he may break in exchange of making part of a community. 
@@ -44,8 +40,6 @@ The transactions are what make Athena a justice system and not just a meaningles
         
         * ### get_content
             * Returns everything except the signature and the hash on a dictionary format
-
-<a name="recon"/>
 
 * ## Recon
 
@@ -63,8 +57,6 @@ The transactions are what make Athena a justice system and not just a meaningles
         
         * ### get_content
             * Returns everything except the signature and the hash on a dictionary format
-
-<a name="accusation"/>
 
 * ## Accusation
 
@@ -86,8 +78,6 @@ The transactions are what make Athena a justice system and not just a meaningles
         * ### get_content
             * Returns everything except the signature and the hash on a dictionary format
 
-<a name="defense"/>
-
 * ## Defense
 
     After being accused by someone of breaking a rule, the user can send a transaction of type *Defense*, choosing a member he thinks will be a good jugde
@@ -104,8 +94,6 @@ The transactions are what make Athena a justice system and not just a meaningles
 
         * ### get_content
             * Returns everything except the signature and the hash on a dictionary format
-
-<a name="veredict"/>
 
 * ## Veredict
 
