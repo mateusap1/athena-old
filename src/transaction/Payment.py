@@ -36,32 +36,3 @@ class Payment(Transaction):
             "receiver": self.receiver,
             "fee": self.fee
         }
-    
-    # Validating the payment
-    def is_valid(self, blockchain):
-        """Validates the transaction"""
-
-        # TODO: Check only the transactions made before this one
-
-        sender_balance = blockchain.get_balance(self.sender, -1, -1)
-
-        # Checking if signature is None
-        if self.signature is None:
-            return False
-
-        # Checking if the signature matches the content
-        if not Wallet.verify_transaction(self):
-            return False
-        
-        print(self.amount, sender_balance, sender_balance < (self.fee + self.amount))
-        # Checking if the sender is capable of paying the fees
-        if sender_balance < (self.fee + self.amount):
-            return False
-        
-        if self.fee < 0:
-            return False
-        
-        if self.amount < 0:
-            return False
-        
-        return True
