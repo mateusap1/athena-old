@@ -44,6 +44,7 @@ class Blockchain(object):
             proof = proof,
             previous_hash = previous_hash
         )
+        block.hash()
 
         self.transactions = []
         self.chain.append(block)
