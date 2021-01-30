@@ -10,13 +10,14 @@ The block is the most important part of the blockchain. It is in the block that 
 * previous_hash: The hash of the previous block
 
 ### methods
-* ### get_hash
-    * Calculates a sha256 hash representation of the block dictionary
-
-    * Returns this hashed value in a hexadecimal format
+* ### hash
+    * Sets block hash variable to the sha256 hash of the dictionary version of the block
 
 * ### get_dict
     * Returns a dictionary version of the block
+
+* ### get_content
+    * Returns a dictionary version of the block without the hash value
 
 * ### dict_to_object
     * Transforms a dictionary into a block object
