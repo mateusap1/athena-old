@@ -15,13 +15,22 @@ class Block(object):
         self.previous_hash = previous_hash
     
     def hash(self):
-        encoded_block = json.dumps(self.get_dict(), sort_keys = True).encode()
+        encoded_block = json.dumps(self.get_content(), sort_keys = True).encode()
 
         self.hashing = hashlib.sha256(encoded_block).hexdigest()
     
     def get_dict(self):
         return {
             "hash": self.hashing,
+            "index": self.index,
+            "timestamp": self.timestamp,
+            "transactions": [transaction.to_dict() for transaction in self.transactions],
+            "proof": self.proof,
+            "previous_hash": self.previous_hash
+        }
+    
+    def get_content(self):
+        return {
             "index": self.index,
             "timestamp": self.timestamp,
             "transactions": [transaction.to_dict() for transaction in self.transactions],
