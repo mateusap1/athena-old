@@ -17,17 +17,18 @@ def test_create_block():
     blockchain = Blockchain(False)
     block = blockchain.get_previous_block()
     proof = block.proof
-    previous_hash = block.get_hash()
+    previous_hash = block.hashing
     new_proof = blockchain.proof_of_work(proof)
 
     new_block = blockchain.create_block(new_proof, previous_hash)
 
     expected_result = Block(2, new_block.timestamp, [], 533, previous_hash)
+    expected_result.hash()
 
+    assert new_block.hashing == expected_result.hashing
     assert new_block.index == expected_result.index
     assert new_block.transactions == expected_result.transactions
     assert new_block.proof == expected_result.proof
-    assert new_block.get_hash() == expected_result.get_hash()
     assert new_block.get_dict() == expected_result.get_dict()
 
 def test_get_mining_difficulty():
