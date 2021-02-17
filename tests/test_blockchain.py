@@ -2,151 +2,138 @@ import sys
 import os
 import hashlib
 import datetime
+import math
+import json
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
 
-from Blockchain import Blockchain
+from transaction.Verdict import Verdict
+from transaction.Accusation import Accusation
+from transaction.Contract import Contract
+
+from transaction.Transaction import Transaction
+from Wallet import Wallet
 from Block import Block
-from wallet.Wallet import Wallet
-from transaction.Payment import Payment
+from Blockchain import Blockchain
 
 
 wallet = Wallet()
 
+PRIVATE_KEY = wallet.private_key
+PUBLIC_KEY = wallet.public_key
+
 def test_create_block():
     blockchain = Blockchain(False)
-    block = blockchain.get_previous_block()
-    proof = block.proof
-    previous_hash = block.hashing
-    new_proof = blockchain.proof_of_work(proof)
 
-    new_block = blockchain.create_block(new_proof, previous_hash)
+    block = blockchain.create_block()
 
-    expected_result = Block(2, new_block.timestamp, [], 533, previous_hash)
-    expected_result.hash()
+    assert block.hash_value[:5] == "0" * 5
 
-    assert new_block.hashing == expected_result.hashing
-    assert new_block.index == expected_result.index
-    assert new_block.transactions == expected_result.transactions
-    assert new_block.proof == expected_result.proof
-    assert new_block.get_dict() == expected_result.get_dict()
+    encoded_block = json.dumps(block.get_content(), sort_keys = True).encode()
+    current_hash = hashlib.sha256(encoded_block).hexdigest()
 
-def test_get_mining_difficulty():
+    assert block.hash_value == current_hash
+
+
+def test_add_reward():
     blockchain = Blockchain(False)
 
-    chains = [
-        [
-            Block(None, "2018-12-04 09:41:09.0", None, 1, None),
-            Block(None, "2018-12-04 09:41:17.0", None, 533, None)
-        ],
-        [
-            Block(None, "2018-12-04 09:41:09.0", None, 1, None),
-            Block(None, "2018-12-04 09:41:16.0", None, 533, None)
-        ],
-        [
-            Block(None, "2018-12-04 09:41:09.0", None, 1, None),
-            Block(None, "2018-12-04 09:41:16.0", None, 533, None),
-            Block(None, "2018-12-04 09:41:23.0", None, 912758, None)
-        ]
-    ]
+    fees = [13.6, 45.3, 22, 7.9, 69.42]
+    expected_total = sum(fees) + blockchain.get_current_reward()
+    expected_payment = Payment(PUBLIC_KEY, 0, expected_total, PUBLIC_KEY)
 
-    expected_outputs = [4, 5, 6]
+    for fee in fees:
+        payment = Payment(PUBLIC_KEY, fee, 57, PUBLIC_KEY)
+        blockchain.add_transaction(payment)
 
-    for i, chain in enumerate(chains):
-        blockchain.chain = chain
-        blockchain.get_mining_difficulty()
-        assert blockchain.get_mining_difficulty() == expected_outputs[i]
+    real_total = blockchain.add_reward(wallet)
+    real_payment = blockchain.transactions[0]
 
-def test_proof_of_work():
-    blockchain = Blockchain(False)
+    assert math.isclose(real_total, expected_total)
+    assert real_payment.sender == expected_payment.sender
+    assert real_payment.fee == expected_payment.fee
+    assert math.isclose(real_payment.amount, expected_payment.amount)
+    assert real_payment.receiver == expected_payment.receiver
 
-    inputs = [(4, 1), (5, 1), (6, 245)]
-    expected_outputs = [533, 632238, 2220697]
-
-    for i in range(len(inputs)):
-        blockchain.difficulty = inputs[i][0]
-        real_output = blockchain.proof_of_work(inputs[i][1])
-
-        assert real_output == expected_outputs[i]
 
 def test_get_balance():
     inputs = [
         [
-            Block(None, None, [
+            Block(None, [
                 Payment(
-                    sender = "Mateus",
-                    fee = 0,
-                    amount = 100,
-                    receiver = "Mateus"
+                    sender="Mateus",
+                    fee=0,
+                    amount=100,
+                    receiver="Mateus"
                 )
-            ], None, None),
+            ], None),
 
-            Block(None, None, [
+            Block(None, [
                 Payment(
-                    sender = "Miner",
-                    fee = 0,
-                    amount = 112,
-                    receiver = "Miner"
+                    sender="Miner",
+                    fee=0,
+                    amount=112,
+                    receiver="Miner"
                 ),
                 Payment(
-                    sender = "Mateus",
-                    fee = 5,
-                    amount = 35,
-                    receiver = "Lucas"
+                    sender="Mateus",
+                    fee=5,
+                    amount=35,
+                    receiver="Lucas"
                 ),
                 Payment(
-                    sender = "Lucas",
-                    fee = 7,
-                    amount = 18,
-                    receiver = "João"
+                    sender="Lucas",
+                    fee=7,
+                    amount=18,
+                    receiver="João"
                 )
-            ], None, None)
+            ], None)
         ],
         [
-            Block(None, None, [
+            Block(None, [
                 Payment(
-                    sender = "Mateus",
-                    fee = 0,
-                    amount = 100,
-                    receiver = "Mateus"
+                    sender="Mateus",
+                    fee=0,
+                    amount=100,
+                    receiver="Mateus"
                 )
-            ], None, None),
+            ], None),
 
-            Block(None, None, [
+            Block(None, [
                 Payment(
-                    sender = "Marcos",
-                    fee = 0,
-                    amount = 100,
-                    receiver = "Marcos"
+                    sender="Marcos",
+                    fee=0,
+                    amount=100,
+                    receiver="Marcos"
                 )
-            ], None, None),
+            ], None),
 
-            Block(None, None, [
+            Block(None, [
                 Payment(
-                    sender = "Miner",
-                    fee = 0,
-                    amount = 122,
-                    receiver = "Miner"
+                    sender="Miner",
+                    fee=0,
+                    amount=122,
+                    receiver="Miner"
                 ),
                 Payment(
-                    sender = "Mateus",
-                    fee = 5,
-                    amount = 10,
-                    receiver = "Lucas"
+                    sender="Mateus",
+                    fee=5,
+                    amount=10,
+                    receiver="Lucas"
                 ),
                 Payment(
-                    sender = "Lucas",
-                    fee = 2,
-                    amount = 3,
-                    receiver = "João"
+                    sender="Lucas",
+                    fee=2,
+                    amount=3,
+                    receiver="João"
                 ),
                 Payment(
-                    sender = "Marcos",
-                    fee = 15,
-                    amount = 15,
-                    receiver = "Lucas"
+                    sender="Marcos",
+                    fee=15,
+                    amount=15,
+                    receiver="Lucas"
                 )
-            ], None, None)
+            ], None)
         ]
     ]
 

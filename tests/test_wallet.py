@@ -1,45 +1,49 @@
+import pytest
 import sys
 import os
-import hashlib
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
 
-from Blockchain import Blockchain
+from transaction.Verdict import Verdict
+from transaction.Accusation import Accusation
+from transaction.Contract import Contract
+
 from transaction.Transaction import Transaction
-from wallet.Wallet import Wallet
+from Wallet import Wallet
+from Blockchain import Blockchain
 
 
 wallet = Wallet()
+PUBLIC_KEY = wallet.public_key
 
-def test_verify_transaction_succeed():
+def test_signature():
     blockchain = Blockchain(False)
 
-    sender = wallet.public_key
-    transaction_type = "contract"
-    data = {"Test": 2}
-    fee = {
-        "value": 3,
-        "receipt": "<receipt>"
-    }
-    signature = wallet.sign_transaction(sender, transaction_type, data, fee)
+    payment = Payment(PUBLIC_KEY, 13, 57, PUBLIC_KEY)
+    contract = Contract(
+        sender = PUBLIC_KEY, 
+        fee = 13,
+        fine = 100,
+        rules = ["NAP"],
+        judges = ["Calvin", "Luther", "Knox"],
+        signatures = ["<signature />"]
+    )
+    accusation = Accusation(
+        sender=PUBLIC_KEY,
+        fee=13,
+        accused="<Accused />",
+        contract=contract
+    )
+    verdict = Verdict(
+        sender=PUBLIC_KEY,
+        fee=13,
+        accusation=accusation,
+        is_guilty=True,
+        description="After carefull analysis, it became clear that the accused infriged the rules, which caused serious losses to the accuser."
+    )
 
-    transaction = Transaction(sender, transaction_type, data, fee, signature)
+    transactions = [payment, contract, accusation, verdict]
 
-    assert Wallet.verify_transaction(transaction) == True
-
-def test_verify_transaction_fail():
-    blockchain = Blockchain(False)
-
-    sender = wallet.public_key
-    transaction_type = "contract"
-    data = {"Test": 2}
-    fee = {
-        "value": 3,
-        "receipt": "<receipt>"
-    }
-    signature = wallet.sign_transaction(sender, transaction_type, data, fee)
-    fee = 100
-
-    transaction = Transaction(sender, transaction_type, data, fee, signature)
-
-    assert Wallet.verify_transaction(transaction) == False
+    for transaction in transactions:
+        wallet.sign_transaction(transaction)
+        assert Wallet.verify_transaction(transaction) == True
