@@ -22,6 +22,8 @@ It’s the class that will be used to initialize the blockchain it self. When in
 * ### get_mining_difficulty
     * Calculates the number of leading zeros that approaches the time goal of mining one block each 120 seconds. The number of leading zeros necessary to make a valid hash should be increased by one every time a block is mined in less then *N* / 16 seconds where *N* is the ideal time difference between blocks.
 
+    * Here you can find a good explanation on how bitcoin difficulty is obtained: https://medium.com/@blairlmarshall/how-do-miners-validate-transactions-c01b05f36231#1003
+
     * Returns the mining difficulty
 
 * ### get_current_reward

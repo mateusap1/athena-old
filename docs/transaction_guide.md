@@ -6,7 +6,7 @@ The transactions are what make Athena a justice system and not just a meaningles
 * [Recon](#recon)
 * [Accusation](#accusation)
 * [Defense](#defense)
-* [Veredict](#veredict)
+* [Verdict](#verdict)
 
 * ## Payment
 
@@ -95,16 +95,16 @@ The transactions are what make Athena a justice system and not just a meaningles
         * ### get_content
             * Returns everything except the signature and the hash on a dictionary format
 
-* ## Veredict
+* ## Verdict
 
-    After having carefully analyzed the case, each judge and member of the jury should send a transaction of type veredict to the blockchain expressing their opinion on the case, as well as, if they think the accused is guilty (and the fine is reasonable). If they think that the accusated is guilty but the fine is absurd, they should mark as if the accusated is not guilty, to the accusator opens a new transaction with a reasonable value.
+    After having carefully analyzed the case, each judge and member of the jury should send a transaction of type verdict to the blockchain expressing their opinion on the case, as well as, if they think the accused is guilty (and the fine is reasonable). If they think that the accusated is guilty but the fine is absurd, they should mark as if the accusated is not guilty, to the accusator opens a new transaction with a reasonable value.
 
     * ### params
         * sender: the public key of the sender in a string format
         * fee: the amount that will be paid to the miners in a float format
         * accusation: the accusation transaction that was sent against him
         * is_guilty: if the accusated is guilty and the proposed fine is reasonable (True or False)
-        * description: why they made this veredict
+        * description: why they made this verdict
 
     * ### methods
         * ### to_dict

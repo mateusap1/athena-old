@@ -3,6 +3,7 @@
 The wallet is the member identity. It is with the wallet that they are able to make and receive transactions.
 
 Most of the following methods were copied from this repo: https://github.com/adi2381/py-blockchain
+For a cryptographic basic understanding, this video may be helpful: https://www.youtube.com/watch?v=bRBJ_0I919E&list=PL6TbWIxWsLY3XuAZB4C0_GxrR76TAZOf2
 
 ### methods
 * ### generate_keys
