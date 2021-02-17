@@ -7,41 +7,49 @@ import sys
 
 from uuid import uuid4
 from urllib.parse import urlparse
-
 from Block import Block
-from wallet.Wallet import Wallet
-from transaction.Payment import Payment
-# from transaction.Transaction import Transaction
-from config import config
+from Wallet import Wallet
+
+from config import path_files
 
 
-FILE_NAME = config["file_name"]
-FILE_PATH = config['blockchain_path']
-FILE_FULL_PATH = f"{FILE_PATH}/{FILE_NAME}"
+BLOCKCHAIN_PATH = path_files["blockchain_path"] + "/blockchain.ath"
+
 
 class Blockchain(object):
 
-    def __init__(self, store_object = True):
+    def __init__(self, store_object=True):
         self.store_object = store_object
 
         self.transactions = []
+        self.temp_requests = []
+        self.temp_responses = []
         self.chain = []
-        self.create_block(proof = 1, previous_hash = "0") # Genesis block
         self.nodes = set()
-        self.mine_delay = 120 # Interval in seconds between the creation of two blocks that should be aproached
-        self.difficulty = 4 # The number of leading zeros necessary to the hash
 
-        if self.store_object:
-            # Creating file where the blockchain object will be stored
-            with open(FILE_FULL_PATH, "wb") as blockchain_file:
-                pickle.dump(self, blockchain_file)
+        # The number of leading zeros necessary to the hash
+        self.difficulty = 4
+
+        # Create genesis block
+        self.create_block()
+        self.save()
     
-    def create_block(self, proof, previous_hash):
+    def save(self):
+        if self.store_object:
+            with open(BLOCKCHAIN_PATH, "wb") as blockchain_file:
+                pickle.dump(self, blockchain_file)
+
+    def create_block(self):
+        """Creates and mines a block with the current transactions"""
+
+        if len(self.chain) == 0:
+            previous_hash = "0"
+        else:
+            previous_hash = self.get_previous_block().hash_value
+
         block = Block(
             index = len(self.chain) + 1,
-            timestamp = str(datetime.datetime.now()),
             transactions = self.transactions,
-            proof = proof,
             previous_hash = previous_hash
         )
         block.hash()
@@ -51,125 +59,97 @@ class Blockchain(object):
 
         if self.store_object:
             # Saving recent version of the blockchain
-            with open(FILE_FULL_PATH, "wb") as blockchain_file:
+            with open(BLOCKCHAIN_PATH, "wb") as blockchain_file:
                 pickle.dump(self, blockchain_file)
 
         return block
-    
+
     def get_previous_block(self):
+        if len(self.chain) == 0:
+            return None
         return self.chain[-1]
-    
-    def get_mining_difficulty(self):
-        if len(self.chain) < 2:
-            return self.difficulty
-        
-        previous_block = self.get_previous_block()
-        before_previous_block = self.chain[-2]
 
-        first_block_time = datetime.datetime.strptime(previous_block.timestamp, "%Y-%m-%d %H:%M:%S.%f")
-        second_block_time = datetime.datetime.strptime(before_previous_block.timestamp, "%Y-%m-%d %H:%M:%S.%f")
-        
-        total_time_spent = (first_block_time - second_block_time).total_seconds() # The time that took to mine a new block
-        hash_operation = hashlib.sha256(str(previous_block.proof**2 - before_previous_block.proof**2).encode()).hexdigest()
-
-        # Number of leading zeros from the last block checked
-        current_difficulty = len(hash_operation) - len(hash_operation.lstrip("0"))
-
-        # If the miners were 16x faster then the ideal time then the difficulty should be improved
-        if (float(total_time_spent) * 16) < self.mine_delay:
-            self.difficulty = current_difficulty + 1
-        
-            if self.store_object:
-                with open(FILE_FULL_PATH, "wb") as blockchain_file:
-                    pickle.dump(self, blockchain_file)
-
-        return self.difficulty
-    
-    def get_current_reward(self):
-        return 100
-    
-    def proof_of_work(self, previous_proof: int) -> int:
-        # TODO: Make the proof of work differ when the timestamp is changed
-        if previous_proof > 2 ** 32 or previous_proof < 0:
-            raise Exception("previous_proof must be a positive integer with maximum size of 32 bits")
-
-        new_proof = 1
-        check_proof = False
-
-        while check_proof is False:
-            hash_operation = hashlib.sha256(str(new_proof**2 - previous_proof**2).encode()).hexdigest()
-            
-            if hash_operation[:self.difficulty] == "0" * self.difficulty:
-                check_proof = True
-            else:
-                new_proof += 1
-        
-        return new_proof
-    
     def add_transaction(self, transaction):
         self.transactions.append(transaction)
-
-        if self.store_object:
-            with open(FILE_FULL_PATH, "wb") as blockchain_file:
-                pickle.dump(self, blockchain_file)
+        self.save()
 
         previous_block = self.get_previous_block()
 
         return previous_block.index + 1
-    
-    def get_balance(self, public_key):
-        balance = 0
-        for block in self.chain:
-            for transaction in block.transactions:
-                if isinstance(transaction, Payment):
-                    if transaction.receiver == public_key:
-                        balance += transaction.amount
-                    elif transaction.sender == public_key:
-                        balance -= transaction.amount
-                        balance -= transaction.fee
-        
-        return balance
-    
-    def add_node(self, address):
-        parsed_url = urlparse(address)
-        self.nodes.add(parsed_url.netloc)
 
-        if self.store_object:
-            with open(FILE_FULL_PATH, "wb") as blockchain_file:
-                pickle.dump(self, blockchain_file)
+    def add_request(self, request):
+        self.temp_requests.append(request)
+        self.save()
     
-    def replace_chain(self):
+    def add_response(self, response):
+        self.temp_responses.append(response)
+        self.save()
+
+    def add_node(self, address):
+        # Validation
+        if not isinstance(address, tuple):
+            raise Exception("[ERROR] Address must be of type tuple")
+        if not len(address) == 2:
+            raise Exception("[ERROR] Address must have length of 2")
+        if not isinstance(address[0], str):
+            raise Exception("[ERROR] Addresses first element must be of typestring")
+        if not isinstance(address[1], int):
+            raise Exception("[ERROR] Addresses second element must be of type int")
+
+        self.nodes.add(address)
+        self.save()
+
+    def remove_node(self, node):
+        self.nodes.remove(node)
+        self.save()
+
+    def replace_chain(self, wallet):
         network = self.nodes
         longest_chain = None
         max_length = len(self.chain)
 
         for node in network:
-            response = requests.get(f"http://{node}/get_chain")
+            if isinstance(node, tuple):
+                wallet.connect_node(node)
+                response = wallet.send_request("!get_chain", {})
 
-            if response.status_code == 200:
-                chain = Blockchain.json_to_object(response.json()["chain"])
-                length = response.json()["length"]
+                if response and response.success == True:
+                    chain = response.content["chain"]
+                    length = response.content["length"]
 
-                if length > max_length and Blockchain.is_chain_valid(chain):
-                    longest_chain = chain
-                    max_length = length
-        
+                    if length > max_length and Blockchain.is_chain_valid(chain):
+                        longest_chain = chain
+                        max_length = length
+
         if longest_chain:
             self.chain = longest_chain
-
-            if self.store_object:
-                with open(f"{config['blockchain_path']}//{FILE_NAME}", "wb") as blockchain_file:
-                    pickle.dump(self, blockchain_file)
+            self.save()
 
             return True
-        
+
         return False
-    
+
     def get_dict_list(self):
-        return [block.get_dict() for block in self.chain]
-    
+        return [block.to_dict() for block in self.chain]
+
+    @staticmethod
+    def is_chain_valid(blockchain):
+        for block in blockchain.chain:
+            for transaction in block.transactions:
+                if transaction.is_valid() is False:
+                    return False
+            
+            encoded_block = json.dumps(block.get_content(), sort_keys = True).encode()
+            current_hash = hashlib.sha256(encoded_block).hexdigest()
+
+            if current_hash != block.hash_value:
+                return False
+            
+            if block.hash_value[:blockchain.difficulty] != "0" * blockchain.difficulty:
+                return False
+
+        return True
+
     @staticmethod
     def json_to_object(chain):
         return [Block.dict_to_object(json.loads(block)) for block in chain]
-
-
