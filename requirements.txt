@@ -1,6 +1,2 @@
 scikit-learn
-tox
-requests
-Flask
-pycriptodome
-bit
+pycryptodome
