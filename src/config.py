@@ -1,9 +1,23 @@
 path_files = {
-    "blockchain_path": "/home/mateusap1/Documents/athena_core",
-    "wallet_path": "/home/mateusap1/Documents/athena_core"
+    "node_path": "/home/mateusap1/Documents/athena_core/node",
+    "account_path": "/home/mateusap1/Documents/athena_core/account"
 }
 
-block_config = {
-    "size_limit": 100,
-    "mining_difficulty": 4
+id_config = {
+    "username_char_limit": 64,
+    "nonce_limit": 10**6,
+    "date_format": "%Y-%m-%d %H:%M:%S.%f",
+    "hash_difficulty": 5
+}
+
+contract_config = {
+    "minimum_judges": 1,
+    "maximum_judges": 256,
+    "minimum_rules": 1,
+    "maximum_rules": 1024,
+    "allow_sender_to_judge": False
+}
+
+node_config = {
+    "transactions_daylimit": 5
 }

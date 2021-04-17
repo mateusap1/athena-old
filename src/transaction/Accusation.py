@@ -1,6 +1,6 @@
 from transaction.Transaction import Transaction
 from transaction.Contract import Contract
-from utils.transaction_utils import compare_signature
+from utils import compare_signature
 
 
 class Accusation(Transaction):

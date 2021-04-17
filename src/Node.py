@@ -10,8 +10,7 @@ import Crypto.Random
 from uuid import uuid4
 from urllib.parse import urlparse
 
-from Node_Request import Node_Request
-from Node_Response import Node_Response
+from collections import Counter
 
 from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
@@ -22,218 +21,186 @@ from transaction.Accusation import Accusation
 from transaction.Contract import Contract
 from transaction.Transaction import Transaction
 
-from Request import Request
-from Blockchain import Blockchain
-from Wallet import Wallet
-from config import path_files
-from utils.transaction_utils import compare_signature
+from Account import Account
+from config import path_files, id_config, node_config
+from utils import compare_signature, verify_hash
 
 
-BLOCKCHAIN_PATH = path_files["blockchain_path"] + "/blockchain.ath"
-WALLET_PATH = path_files["wallet_path"] + "/node_wallet.ath"
-HEADER = 10 # The bytes size of the length message
-PORT = 5050
-# SERVER = socket.gethostbyname(socket.gethostname())
-SERVER = "192.168.1.104"
-ADDR = (SERVER, PORT)
-FORMAT = 'utf-8'
-DISCONNECT_MESSAGE = "!disconnect"
-MAX_CONNECTIONS = 1000
+NODE_PATH = path_files["node_path"] + "/info.json"
 MAX_TRANSACTIONS = 100
+HASH_DIFFICULTY = id_config["hash_difficulty"]
+NONCE_LIMIT = id_config["nonce_limit"]
+USERNAME_LIMIT = id_config["username_char_limit"]
+TRANSACTIONS_DAYLIMIT = node_config["transactions_daylimit"]
+
+
+"""
+How info should look like ->
+{
+    "connected_nodes": [
+        {"ip": "192.168.0.1", "port": "6969"},
+        {"ip": "192.168.0.11", "port": "69420"}
+    ],
+    "transactions": [
+        {
+            "type": "contract",
+            "content": {...},
+            "receivers": [...],
+            "date": "2021-04-15 21:34:31.991790+00:00"
+        }
+    ]
+}
+"""
+
+"""
+How ID should look like ->
+{
+    "username": "Mateus Oliveira",
+    "public_key": "5ed0cd...f91a98",
+    "nonce": 228289,
+    "creation_date": "2021-04-15 21:34:31.991790+00:00",
+    "hash_value": "00000e...9b3b75"
+}
+"""
 
 
 class Node(object):
 
-    def __init__(self, blockchain = None, wallet = None):
-        self.blockchain = blockchain
-        self.wallet = wallet
+    def __init__(self, info: dict = None):
+        self._info = info
         self.load()
 
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind(ADDR)
-        self.running = False
+    def load(self) -> None:
+        """Loads essential components of the node"""
 
-        self.connections = []
-        self.commands = {
-            "!get_chain": self.get_chain,
-            "!is_chain_valid": self.is_chain_valid,
-            "!send_transaction": self.send_transaction,
-            "!send_request": self.send_request,
-            "!connect_nodes": self.connect_nodes,
-            "!replace_chain": self.replace_chain
-        }
-    
-    def load(self):
-        """Loading essential components of the blockchain"""
-
-        if self.blockchain is None:
+        if self._info is None:
             try:
-                with open(BLOCKCHAIN_PATH, "rb") as blockchain_file:
-                    self.blockchain = pickle.load(blockchain_file)
+                with open(NODE_PATH, "r") as f:
+                    self._info = json.load(f)
             except IOError:
-                self.blockchain = Blockchain()
-        
-        if self.wallet is None:
-            try:
-                with open(WALLET_PATH, "rb") as wallet_file:
-                    self.wallet = pickle.load(wallet_file)
-            except IOError:
-                self.wallet = Wallet(WALLET_PATH)
-    
-    def handle_client(self, conn, addr):
-        print(f"[NEW CONNECTION] {addr} connected.")
+                self._info = {"connected_nodes": [], "transactions": []}
 
-        self.connections.append(addr)
-        while addr in self.connections:
-            msg_length = conn.recv(HEADER).decode(FORMAT)
-            if msg_length:
-                msg_length = int(msg_length)
-                msg = conn.recv(msg_length)
-                request = pickle.loads(msg)
+                self.save()
 
-                if isinstance(request, Node_Request):
-                    print(f"[{addr}] {request.command}")
+    def save(self) -> None:
+        """Saves the changes into a JSON file"""
 
-                    if request.command == DISCONNECT_MESSAGE:
-                        response = self.disconnect(addr)
-                    else:
-                        response = self.handle_request(request)
-                    
-                    bytes_response = pickle.dumps(response)
-                    rsp_length = len(bytes_response)
-                    send_length = str(rsp_length).encode(FORMAT)
-                    send_length += b' ' * (HEADER - len(send_length))
-                    conn.send(send_length)
+        with open(NODE_PATH, "w") as f:
+            self._info = json.dump(self._info, f)
 
-                    conn.send(bytes_response)
+    def get_transactions(self) -> list:
+        """Returns all transactions stored inside this node"""
 
-        conn.close()
-    
-    def disconnect(self, addr):
-        self.connections.remove(addr)
+        return self._info["transactions"]
 
-        return Node_Response(True, None, f"[DISCONNECTING] Server disconnected on {addr}")
-    
-    def disconnect_all(self):
-        self.connections = []
-    
-    def start(self):
-        self.server.listen(MAX_CONNECTIONS)
-        print(f"[LISTENING] Server is listening on {SERVER}")
+    def is_transaction_valid(self, transaction: dict) -> bool:
+        """Verfies if a transaction is valid or not"""
 
-        self.running = True
-        while self.running:
-            conn, addr = self.server.accept()
-            if not addr in self.connections:
-                thread = threading.Thread(target=self.handle_client, args=(conn, addr))
-                thread.start()
-                print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
-            
-    def stop(self):
-        self.running = False
-    
-    def handle_request(self, request):
-        command = request.command
-        params = request.params
+        required_keys = ["type", "content", "receivers"]
 
-        if command in self.commands:
-            response = self.commands[command](**params)
-        else:
-            response = Node_Response(success = False, content = None, message = "[ERROR] Command not found")
+        if Counter(transaction.keys()) != Counter(required_keys):
+            # If, doesn't matter the order, the keys are not all
+            # the same as the expected ones, return False
 
-        return response
-    
-    def mine_block(self):
-        print("[SERVER] Starting block mining")
-        block = self.blockchain.create_block()
+            return False
 
-        return Node_Response(success = True, content = block, message = "Block mined successfully")
-    
-    def get_chain(self):
-        chain = self.blockchain.chain
+        tr_type = transaction["type"]
+        tr_content = transaction["content"]
+        tr_receivers = transaction["receivers"]
 
-        content = {
-            "chain": chain,
-            "length": len(chain)
+        expected_obj_types = {
+            "tr_type": str,
+            "tr_content": dict,
+            "tr_receivers": list
         }
-        response = Node_Response(success = True, content = content, message = "Everything went fine")
 
-        return response
-    
-    def is_chain_valid(self):
-        if Blockchain.is_chain_valid(self.blockchain):
-            return Node_Response(success = True, content = True, message = "[Success] The chain is valid")
-        else:
-            return Node_Response(success = True, content = False, message = "[Success] The chain is not valid")
-    
-    def send_transaction(self, transaction):
-        if len(self.blockchain.transactions) > MAX_TRANSACTIONS:
-            self.mine_block()
-            print("[SERVER] Block mined successfuly")
+        if any([not isinstance(value, expected_obj_types[key]) for key, value in transaction.items()]):
+            # Returns false if any of the transaction values
+            # have a different type other than the expected
 
-        if transaction.is_valid():
-            index = self.blockchain.add_transaction(transaction)
-            return Node_Response(True, index, "[Success] The transaction was added to the list")
-        
-        return Node_Response(False, None, "[ERROR] The transaction is not valid")
-        
-    def send_request(self, request):
-        if request.signature is None:
-            return Node_Response(False, None, "[ERROR] The transaction signature is not valid")
+            return False
 
-        if compare_signature(
-            request.sender, 
-            request.signature, 
-            str(request.get_content())
-        ) is False:
-            return Node_Response(False, None, "[ERROR] The request signature is not valid")
-        
-        if len(request.receivers) == 0:
-            return Node_Response(False, None, "[ERROR] There must have at least one receiver")
-        
-        if request.hash_value is None:
-            return Node_Response(False, None, "[ERROR] The request was not hashed correctly")
-        
-        encoded_request = json.dumps(request.get_content(), sort_keys = True).encode()
-        hash_value = hashlib.sha256(encoded_request).hexdigest()
+        valid_transaction = ["Contract", "Accusation", "Verdict", "Appeal"]
 
-        if not hash_value == request.hash_value:
-            return Node_Response(False, None, "[ERROR] The request was not hashed correctly")
-        
-        request_date = request.timestamp
-        current_date = datetime.datetime.now(datetime.timezone.utc)
-        
-        if request_date > current_date:
-            return Node_Response(False, None, "[ERROR] Invalid timestamp")
-        
-        if request_date + datetime.timedelta(hours = 3) < current_date:
-            return Node_Response(False, None, "[ERROR] Invalid timestamp")
+        if not tr_type in valid_transaction:
+            return False
 
-        self.blockchain.add_request(request)
+        transaction_types = {
+            "Contract": Contract,
+            "Accusation": Accusation,
+            "Verdict": Verdict,
+            "Appeal": None  # TODO: Make this transaction
+        }
 
-        return Node_Response(True, len(self.blockchain.temp_requests), "[SUCCESS] The request was sent with success")
+        try:  # Tries creating a transaction object with the given dict
+            transaction = transaction_types[tr_type](**tr_content)
 
-    def connect_nodes(self, nodes):
+            if transaction.is_valid() is False:
+                return False
+
+        except TypeError:
+            return False
+
+        for userid in tr_receivers:
+            if self.is_id_valid(userid) is False:
+                return False
+
+        return True
+
+    def send_transaction(self, transaction: dict) -> bool:
+        """Stores the transaction sent if it's valid and has valid IDs"""
+
+        if len(self._info["transactions"]) == MAX_TRANSACTIONS:
+            # If the limit of transactions was exceeded, don't add it
+
+            return False
+
+        if self.is_transaction_valid(transaction) is False:
+            return False
+
+        transaction["date"] = str(datetime.datetime.now(datetime.timezone.utc))
+        self._info["transactions"].append(transaction)
+
+        self.save()
+
+        return True
+
+    def connect_nodes(self, nodes: dict) -> None:
+        """Connect nodes that weren't connected before"""
+
         for node in nodes:
-            self.blockchain.add_node(node)
-        
-        return Node_Response(True, self.blockchain.nodes, "[Success] Nodes connected successfully")
-    
-    def replace_chain(self):
-        is_chain_replaced = self.blockchain.replace_chain(self.wallet)
+            if not Counter(nodes.keys()) == Counter(["ip", "port"]):
+                raise ValueError(
+                    "Node must contain two arguments: \"ip\" and \"port\"")
+            elif not node in self._info["connected_nodes"]:
+                if not isinstance(node["ip"], str):
+                    raise TypeError("Node ip must be of type \"str\"")
+                elif not isinstance(node["port"], int):
+                    raise TypeError("Node port must be of type \"int\"")
 
-        if is_chain_replaced:
-            response = Node_Response(True, self.blockchain.chain, "[Success] The chain was replaced by a longer one")
-        else:
-            response = Node_Response(True, self.blockchain.chain, "[Success] The chain was already the longest")
-        
-        return response
+                self._info["connected_nodes"].append(node)
+
+        self.save()
+
+    def remove_outdated_transactions(self):
+        """Removes any transactions that were added more than N days ago, 
+        where N is the transactions day limit"""
+
+        date_limit = datetime.datetime.now(datetime.timezone.utc) - \
+            datetime.timedelta(days=TRANSACTIONS_DAYLIMIT)
+
+        self._info["transactions"] = list(filter(
+            lambda x: datetime.datetime.strptime(
+                x["date"], "%Y-%m-%d %H:%M:%S.%f") > date_limit,
+            self._info["transactions"]
+        ))
+
+        self.save()
+
 
 if __name__ == "__main__":
     node = Node()
-    try:
-        node.start()
-    except KeyboardInterrupt:
-        print("[SERVER] Stoping...")
-        node.disconnect_all()
-        node.stop()
+    account = Account("password")
+
+    myid = account.info["ID"]
+    print(node.is_id_valid(myid))
