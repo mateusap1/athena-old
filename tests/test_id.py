@@ -24,6 +24,10 @@ def test_ids():
     assert ID.get_random()["id"].is_valid() == True
     assert ID.is_id_valid(ID.get_random()["id"].to_dict()) == True
 
+    # Verify if the random contract is not valid (when valid == False)
+    assert ID.get_random(valid = False)["id"].is_valid() == False
+    assert ID.is_id_valid(ID.get_random(valid = False)["id"].to_dict()) == False
+
     # Should be valid
     content = hash_content({
         "username": "Isaac Newton",
