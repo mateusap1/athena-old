@@ -18,6 +18,11 @@ contract_config = {
     "allow_sender_to_judge": False
 }
 
+verdict_config = {
+    "sentence_char_limit": 4096,
+    "description_char_limit": 8192
+}
+
 node_config = {
     "transactions_daylimit": 5
 }
