@@ -56,6 +56,7 @@ def test_ids():
         "public_key": parsed_pubkey
     }, HASH_DIFFICULTY, NONCE_LIMIT)
 
+    content["hash_value"] = content["hash_value"].replace("0", "a")
     content["username"] = "Albert Einsten"
 
     assert ID.is_id_valid(content) == False

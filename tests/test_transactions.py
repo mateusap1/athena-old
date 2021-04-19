@@ -49,7 +49,8 @@ def test_contract():
     expire = datetime.datetime.now() + datetime.timedelta(days=1)
 
     # Should be valid as well
-    c = Contract(key, userid, rules, judges, expire)
+    c = Contract(userid, rules, judges, expire)
+    c.sign(key)
     assert c.is_valid() == True
 
     content = hash_content({
@@ -61,32 +62,38 @@ def test_contract():
     invalid_id = ID(**content)
 
     # Invalid ID
-    c = Contract(key, invalid_id, rules, judges, expire)
+    c = Contract(invalid_id, rules, judges, expire)
+    c.sign(key)
     assert c.is_valid() == False
 
     # Unmatching key
-    c = Contract(create_key(), userid, rules, judges, expire)
+    c = Contract(userid, rules, judges, expire)
+    c.sign(create_key())
     assert c.is_valid() == False
 
     # No judges
-    c = Contract(key, userid, rules, [], expire)
+    c = Contract(userid, rules, [], expire)
+    c.sign(key)
     assert c.is_valid() == False
 
     # No rules
-    c = Contract(key, userid, [], judges, expire)
+    c = Contract(userid, [], judges, expire)
+    c.sign(key)
     assert c.is_valid() == False
 
     # Sender as judge
-    c = Contract(key, userid, rules, [userid], expire)
+    c = Contract(userid, rules, [userid], expire)
+    c.sign(key)
     assert c.is_valid() == SENDER_CAN_JUDGE
 
     # Repeated judges
-    c = Contract(key, userid, rules, [judges[0]
-                                      for _ in range(MAX_JUDGES)], expire)
+    c = Contract(userid, rules, [judges[0] for _ in range(MAX_JUDGES)], expire)
+    c.sign(key)
     assert c.is_valid() == False
 
     expired = datetime.datetime.now() - datetime.timedelta(days=1)
-    c = Contract(key, userid, rules, judges, expired)
+    c = Contract(userid, rules, judges, expired)
+    c.sign(key)
     assert c.is_valid() == False
 
 
@@ -104,11 +111,13 @@ def test_accusation():
     rules = ["rule" for _ in range(MIN_RULES)]
     expire = datetime.datetime.now() + datetime.timedelta(days=1)
 
-    contract = Contract(key, userid, rules, judges, expire)
+    contract = Contract(userid, rules, judges, expire)
+    contract.sign(key)
     accused = ID("Murray Rothbard", parsed_pubkey)
 
     # Should be valid as well
-    a = Accusation(key, userid, accused, contract)
+    a = Accusation(userid, accused, contract)
+    a.sign(key)
     assert a.is_valid() == True
 
     content = hash_content({
@@ -120,20 +129,24 @@ def test_accusation():
     invalid_id = ID(**content)
 
     # Invalid sender's ID
-    a = Accusation(key, invalid_id, accused, contract)
+    a = Accusation(invalid_id, accused, contract)
+    a.sign(key)
     assert a.is_valid() == False
 
     # Invalid accused's ID
-    a = Accusation(key, userid, invalid_id, contract)
+    a = Accusation(userid, invalid_id, contract)
+    a.sign(key)
     assert a.is_valid() == False
 
     # Unmatching key
-    a = Accusation(create_key(), userid, accused, contract)
+    a = Accusation(userid, accused, contract)
+    a.sign(create_key())
     assert a.is_valid() == False
 
     # Invalid contract
-    a = Accusation(key, userid, accused,
+    a = Accusation(userid, accused,
                    Contract.get_random(valid=False)["contract"])
+    a.sign(key)
     assert a.is_valid() == False
 
 
@@ -150,15 +163,18 @@ def test_verdict():
     judges = [ID.get_random()["id"] for _ in range(MIN_JUDGES)]
     rules = ["rule" for _ in range(MIN_RULES)]
     expire = datetime.datetime.now() + datetime.timedelta(days=1)
-    contract = Contract(key, userid, rules, judges, expire)
+    contract = Contract(userid, rules, judges, expire)
+    contract.sign(key)
     accused = ID("Hercule Poirot", parsed_pubkey)
 
-    accusation = Accusation(key, userid, accused, contract)
+    accusation = Accusation(userid, accused, contract)
+    accusation.sign(key)
     sentence = "Must be executed"
     description = "Because I say so"
 
     # Should be valid as well
-    v = Verdict(key, userid, accusation, sentence, description)
+    v = Verdict(userid, accusation, sentence, description)
+    v.sign(key)
     assert v.is_valid() == True
 
     content = hash_content({
@@ -170,28 +186,34 @@ def test_verdict():
     invalid_id = ID(**content)
 
     # Invalid sender's ID
-    v = Verdict(key, invalid_id, accusation, sentence, description)
+    v = Verdict(invalid_id, accusation, sentence, description)
+    v.sign(key)
     assert v.is_valid() == False
 
     # Unmatching key
-    v = Verdict(create_key(), userid, accusation, sentence, description)
+    v = Verdict(userid, accusation, sentence, description)
+    v.sign(create_key())
     assert v.is_valid() == False
 
     # Invalid accusation
-    v = Verdict(key, userid, Accusation.get_random(valid=False)["accusation"],
+    v = Verdict(userid, Accusation.get_random(valid=False)["accusation"],
                 sentence, description)
+    v.sign(key)
     assert v.is_valid() == False
 
     # No sentence at all
-    v = Verdict(key, userid, accusation, "", description)
+    v = Verdict(userid, accusation, "", description)
+    v.sign(key)
     assert v.is_valid() == False
 
     # Sentence with more chars than the allowed
-    v = Verdict(key, userid, accusation, "c" * (SENTECE_CHAR_LIMIT+1), description)
+    v = Verdict(userid, accusation, "c" * (SENTECE_CHAR_LIMIT+1), description)
+    v.sign(key)
     assert v.is_valid() == False
 
     # Description with more chars than the allowed
-    v = Verdict(key, userid, accusation, sentence, "c" * (DESCRIPTION_CHAR_LIMIT+1))
+    v = Verdict(userid, accusation, sentence, "c" * (DESCRIPTION_CHAR_LIMIT+1))
+    v.sign(key)
     assert v.is_valid() == False
 
 def test_appeal():
@@ -207,16 +229,23 @@ def test_appeal():
     judges = [ID.get_random()["id"] for _ in range(MIN_JUDGES)]
     rules = ["rule" for _ in range(MIN_RULES)]
     expire = datetime.datetime.now() + datetime.timedelta(days=1)
-    contract = Contract(key, userid, rules, judges, expire)
+
+    contract = Contract(userid, rules, judges, expire)
+    contract.sign(key)
+
     accused = ID("Hercule Poirot", parsed_pubkey)
-    accusation = Accusation(key, userid, accused, contract)
+    accusation = Accusation(userid, accused, contract)
+    accusation.sign(key)
+
     sentence = "Must be executed"
     description = "Because I say so"
 
-    verdict = Verdict(key, userid, accusation, sentence, description)
+    verdict = Verdict(userid, accusation, sentence, description)
+    verdict.sign(key)
 
     # Valid hardcoded appeal
-    a = Appeal(key, userid, verdict)
+    a = Appeal(userid, verdict)
+    a.sign(key)
     assert a.is_valid() == True
 
     content = hash_content({
@@ -228,15 +257,19 @@ def test_appeal():
     invalid_id = ID(**content)
 
     # Invalid sender's ID
-    a = Appeal(key, invalid_id, verdict)
+    a = Appeal(invalid_id, verdict)
+    a.sign(key)
     assert a.is_valid() == False
     
     # Unmatching key
-    a = Appeal(create_key(), userid, verdict)
+    a = Appeal(userid, verdict)
+    a.sign(create_key())
     assert a.is_valid() == False
 
-    invalid_verdict = Verdict(key, userid, accusation, "", description)
+    invalid_verdict = Verdict(userid, accusation, "", description)
+    invalid_verdict.sign(key)
 
     # Invalid verdict
-    a = Appeal(key, userid, invalid_verdict)
+    a = Appeal(userid, invalid_verdict)
+    a.sign(key)
     assert a.is_valid() == False
