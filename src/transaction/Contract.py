@@ -25,12 +25,10 @@ SENDER_CAN_JUDGE = contract_config["allow_sender_to_judge"]
 
 class Contract(Transaction):
 
-    def __init__(self, privkey: RsaKey, sender: ID, rules: list,
-                 judges: list, expire: datetime.datetime):
+    def __init__(self, sender: ID, rules: list, judges: list, 
+                 expire: datetime.datetime, signature: str = None):
 
-        if not isinstance(privkey, RsaKey):
-            raise TypeError("\"privkey\" must be of type RsaKey")
-        elif not isinstance(sender, ID):
+        if not isinstance(sender, ID):
             raise TypeError("\"sender\" must be of type ID")
         elif not isinstance(rules, list):
             raise TypeError("\"rules\" must be of type list")
@@ -38,14 +36,14 @@ class Contract(Transaction):
             raise TypeError("\"judges\" must be of type list")
         elif not isinstance(expire, datetime.datetime):
             raise TypeError("\"expire\" must be of type datetime")
+        elif not (signature is None or isinstance(signature, str)):
+            raise TypeError("\"signature\" must be of type str")
 
-        self.__private_key = privkey
         self.__sender = sender
         self.__rules = rules
         self.__judges = judges
         self.__expire = expire
-
-        self.sign()
+        self.__signature = signature
 
     # TODO: Remove this method, as signatures will be independent from contracts
     def add_signature(self, private_key: str) -> str:
@@ -67,6 +65,10 @@ class Contract(Transaction):
         return False
 
     def is_valid(self):
+        if self.__signature is None:
+            print("Invalid Appeal: Unsigned transaction")
+            return False
+
         if self.__sender.is_valid() is False:
             print("Invalid Contract: Sender's ID is not valid")
             return False
@@ -139,11 +141,11 @@ class Contract(Transaction):
             "judges": [i.to_dict() for i in self.__judges],
             "expire": str(self.__expire)
         }
-
-    def sign(self) -> None:
+    
+    def sign(self, privkey: RsaKey) -> None:
         """Adds a signature to the transaction based on it's content"""
 
-        self.__signature = sign(self.__private_key, self.get_content())
+        self.__signature = sign(privkey, self.get_content())
 
     @staticmethod
     def get_random(valid: bool = True) -> dict:
@@ -155,12 +157,13 @@ class Contract(Transaction):
         key, userid = id_info["private_key"], id_info["id"]
 
         contract = Contract(
-            import_key(key),
             userid,
             ["You shall not kill", "You shall not steal"] if valid else [],
             [ID.get_random()["id"] for _ in range(N)],
             datetime.datetime.now() + datetime.timedelta(days=7)
         )
+
+        contract.sign(import_key(key))
 
         return {
             "private_key": key,

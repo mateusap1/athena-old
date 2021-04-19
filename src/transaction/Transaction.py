@@ -14,7 +14,7 @@ import binascii
 class Transaction(ABC):
 
     @abstractmethod
-    def sign(self) -> None:
+    def sign(self, privkey: RsaKey) -> None:
         """Adds a signature to the transaction based on it's content"""
         pass
 

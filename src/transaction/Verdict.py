@@ -14,12 +14,10 @@ DESCRIPTION_CHAR_LIMIT = verdict_config["description_char_limit"]
 
 class Verdict(Transaction):
 
-    def __init__(self, privkey: RsaKey, sender: ID, accusation: Accusation,
-                 sentence: str, description: str):
+    def __init__(self, sender: ID, accusation: Accusation, sentence: str, 
+                 description: str, signature: str = None):
 
-        if not isinstance(privkey, RsaKey):
-            raise TypeError("\"privkey\" must be of type RsaKey")
-        elif not isinstance(sender, ID):
+        if not isinstance(sender, ID):
             raise TypeError("\"sender\" must be of type ID")
         elif not isinstance(accusation, Accusation):
             raise TypeError("\"accusation\" must be of type Accusation")
@@ -27,39 +25,48 @@ class Verdict(Transaction):
             raise TypeError("\"sentence\" must be of type str")
         elif not isinstance(description, str):
             raise TypeError("\"description\" must be of type str")
+        elif not (signature is None or isinstance(signature, str)):
+            raise TypeError("\"signature\" must be of type str")
 
-        self.__private_key = privkey
         self.__sender = sender
         self.__accusation = accusation
         self.__sentence = sentence
         self.__description = description
-
-        self.sign()
+        self.__signature = signature
 
     def is_valid(self):
+        if self.__signature is None:
+            print("Invalid Appeal: Unsigned transaction")
+            return False
+            
         if self.__sender.is_valid() is False:
             print("Invalid Verdict: Sender's ID is not valid")
             return False
-        elif self.__accusation.is_valid() is False:
+
+        if self.__accusation.is_valid() is False:
             print("Invalid Verdict: Accusation is not valid")
             return False
-        elif compare_signature(self.__sender.to_dict()["public_key"], self.__signature,
-                               self.get_content()) is False:
+
+        if compare_signature(self.__sender.to_dict()["public_key"], self.__signature,
+                             self.get_content()) is False:
             print("Invalid Verdict: Signature doesn't match public key")
             return False
-        elif len(self.__sentence) == 0:
+
+        if len(self.__sentence) == 0:
             print("Invalid Verdict: The sentence must have at least one character")
             return False
-        elif len(self.__sentence) > SENTECE_CHAR_LIMIT:
+
+        if len(self.__sentence) > SENTECE_CHAR_LIMIT:
             print("Invalid Verdict: The sentence surpassed the " +
                   f"characters limit of {SENTECE_CHAR_LIMIT}")
             return False
-        elif len(self.__description) > DESCRIPTION_CHAR_LIMIT:
+
+        if len(self.__description) > DESCRIPTION_CHAR_LIMIT:
             print("Invalid Verdict: The description surpassed the " +
                   f"characters limit of {DESCRIPTION_CHAR_LIMIT}")
             return False
-        else:
-            return True
+
+        return True
 
     def to_dict(self) -> dict:
         """Returns 'Transaction' content on a dictionary format"""
@@ -82,10 +89,10 @@ class Verdict(Transaction):
             "description": self.__description
         }
 
-    def sign(self) -> None:
+    def sign(self, privkey: RsaKey) -> None:
         """Adds a signature to the transaction based on it's content"""
 
-        self.__signature = sign(self.__private_key, self.get_content())
+        self.__signature = sign(privkey, self.get_content())
 
     @staticmethod
     def get_random(valid: bool = True) -> dict:
@@ -96,12 +103,13 @@ class Verdict(Transaction):
         accusation = Accusation.get_random(valid=valid)["accusation"]
 
         verdict = Verdict(
-            import_key(key),
             userid,
             accusation,
             random_word(random.randint(1, SENTECE_CHAR_LIMIT)),
             random_word(random.randint(1, DESCRIPTION_CHAR_LIMIT))
         )
+
+        verdict.sign(import_key(key))
 
         return {
             "private_key": key,

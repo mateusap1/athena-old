@@ -8,40 +8,45 @@ from Crypto.PublicKey.RSA import RsaKey
 
 class Accusation(Transaction):
 
-    def __init__(self, privkey: RsaKey, sender: ID, accused: ID, contract: Contract):
+    def __init__(self, sender: ID, accused: ID, contract: Contract, signature: str = None):
 
-        if not isinstance(privkey, RsaKey):
-            raise TypeError("\"privkey\" must be of type RsaKey")
-        elif not isinstance(sender, ID):
+        if not isinstance(sender, ID):
             raise TypeError("\"sender\" must be of type ID")
         elif not isinstance(accused, ID):
             raise TypeError("\"accused\" must be of type ID")
         elif not isinstance(contract, Contract):
             raise TypeError("\"contract\" must be of type Contract")
+        elif not (signature is None or isinstance(signature, str)):
+            raise TypeError("\"signature\" must be of type str")
 
-        self.__private_key = privkey
         self.__sender = sender
         self.__accused = accused
         self.__contract = contract
-
-        self.sign()
+        self.__signature = signature
 
     def is_valid(self):
+        if self.__signature is None:
+            print("Invalid Appeal: Unsigned transaction")
+            return False
+            
         if self.__sender.is_valid() is False:
             print("Invalid Accusation: Sender's ID is not valid")
             return False
-        elif self.__accused.is_valid() is False:
+
+        if self.__accused.is_valid() is False:
             print("Invalid Accusation: Accused's ID is not valid")
             return False
-        elif self.__contract.is_valid() is False:
+
+        if self.__contract.is_valid() is False:
             print("Invalid Accusation: You must provide a valid contract")
             return False
-        elif compare_signature(self.__sender.to_dict()["public_key"], self.__signature,
-                               self.get_content()) is False:
+
+        if compare_signature(self.__sender.to_dict()["public_key"], self.__signature,
+                             self.get_content()) is False:
             print("Invalid Accusation: Signature doesn't match public key")
             return False
-        else:
-            return True
+
+        return True
 
     def to_dict(self) -> dict:
         """Returns 'Transaction' content on a dictionary format"""
@@ -61,11 +66,11 @@ class Accusation(Transaction):
             "accused": self.__accused.to_dict(),
             "contract": self.__contract.to_dict()
         }
-
-    def sign(self) -> None:
+    
+    def sign(self, privkey: RsaKey) -> None:
         """Adds a signature to the transaction based on it's content"""
 
-        self.__signature = sign(self.__private_key, self.get_content())
+        self.__signature = sign(privkey, self.get_content())
 
     @staticmethod
     def get_random(valid: bool = True) -> dict:
@@ -75,11 +80,12 @@ class Accusation(Transaction):
         key, userid = id_info["private_key"], id_info["id"]
 
         accusation = Accusation(
-            import_key(key),
             userid,
             ID.get_random()["id"],
             Contract.get_random()["contract"]
         )
+
+        accusation.sign(import_key(key))
 
         return {
             "private_key": key,
