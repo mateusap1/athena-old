@@ -17,6 +17,18 @@ class ID(object):
 
     def __init__(self, username: str, public_key: str, nonce: int = None,
                  timestamp: str = None, hash_value: str = None):
+
+        if not isinstance(username, str):
+            raise TypeError("\"username\" must be of type str")
+        elif not isinstance(public_key, str):
+            raise TypeError("\"public_key\" must be of type str")
+        elif not (nonce is None or isinstance(nonce, int)):
+            raise TypeError("\"nonce\" must be of type int")
+        elif not (timestamp is None or isinstance(timestamp, str)):
+            raise TypeError("\"timestamp\" must be of type str")
+        elif not (hash_value is None or isinstance(hash_value, str)):
+            raise TypeError("\"hash_value\" must be of type str")
+
         self.__username = username
         self.__public_key = public_key
 
@@ -29,8 +41,8 @@ class ID(object):
             # otherwise raise an exception
 
             raise ValueError(
-                "\"nonce\", \"timestamp\" and \"hash_value\" are dependant. " +
-                "Either all of them have a value or none of them do.")
+                "\"nonce\", \"timestamp\" and \"hash_value\" are dependent, " +
+                "either all of them have a value or none of them do.")
         else:
             self.__nonce = nonce
             self.__timestamp = timestamp
@@ -129,20 +141,17 @@ class ID(object):
         return True
 
     @staticmethod
-    def get_random() -> dict:
-        """Returns a random valid ID with it's corresponding private key"""
+    def get_random(valid: bool = True) -> dict:
+        """Returns a random ID with it's corresponding private key"""
 
         key = create_key()
         pubkey = parse_key(key.publickey())
         username = random_word(random.randint(1, USERNAME_LIMIT))
 
+        if valid is False:
+            username = "A" * (USERNAME_LIMIT+1)
+
         return {
             "private_key": parse_key(key),
             "id": ID(username, pubkey)
         }
-
-
-# id = ID.get_random()
-
-# print(id.is_valid())
-# print(ID.is_id_valid(id.to_dict()))
