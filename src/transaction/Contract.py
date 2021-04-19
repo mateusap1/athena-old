@@ -13,6 +13,7 @@ from Crypto.Hash import SHA256
 import Crypto.Random
 import binascii
 import datetime
+import random
 
 
 MIN_JUDGES = contract_config["minimum_judges"]
@@ -26,6 +27,18 @@ class Contract(Transaction):
 
     def __init__(self, privkey: RsaKey, sender: ID, rules: list,
                  judges: list, expire: datetime.datetime):
+
+        if not isinstance(privkey, RsaKey):
+            raise TypeError("\"privkey\" must be of type RsaKey")
+        elif not isinstance(sender, ID):
+            raise TypeError("\"sender\" must be of type ID")
+        elif not isinstance(rules, list):
+            raise TypeError("\"rules\" must be of type list")
+        elif not isinstance(judges, list):
+            raise TypeError("\"judges\" must be of type list")
+        elif not isinstance(expire, datetime.datetime):
+            raise TypeError("\"expire\" must be of type datetime")
+
         self.__private_key = privkey
         self.__sender = sender
         self.__rules = rules
@@ -55,6 +68,7 @@ class Contract(Transaction):
 
     def is_valid(self):
         if self.__sender.is_valid() is False:
+            print("Invalid Contract: Sender's ID is not valid")
             return False
 
         seen = set()
@@ -132,18 +146,18 @@ class Contract(Transaction):
         self.__signature = sign(self.__private_key, self.get_content())
 
     @staticmethod
-    def get_random() -> dict:
-        """Returns a random valid Contract with it's corresponding private key"""
+    def get_random(valid: bool = True) -> dict:
+        """Returns a random Contract with it's corresponding private key"""
 
         N = 1
 
-        id_info = ID.get_random()
+        id_info = ID.get_random(valid=valid)
         key, userid = id_info["private_key"], id_info["id"]
 
         contract = Contract(
             import_key(key),
             userid,
-            ["You shall not kill", "You shall not steal"],
+            ["You shall not kill", "You shall not steal"] if valid else [],
             [ID.get_random()["id"] for _ in range(N)],
             datetime.datetime.now() + datetime.timedelta(days=7)
         )

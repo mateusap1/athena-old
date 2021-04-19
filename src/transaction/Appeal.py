@@ -1,44 +1,40 @@
 from transaction.Transaction import Transaction
-from transaction.Contract import Contract
-from utils import compare_signature, import_key, sign
+from transaction.Verdict import Verdict
 from identity import ID
-
+from config import verdict_config
+from utils import compare_signature, sign, random_word, import_key
 from Crypto.PublicKey.RSA import RsaKey
 
+import random
 
-class Accusation(Transaction):
 
-    def __init__(self, privkey: RsaKey, sender: ID, accused: ID, contract: Contract):
+class Appeal(Transaction):
+
+    def __init__(self, privkey: RsaKey, sender: ID, verdict: Verdict):
 
         if not isinstance(privkey, RsaKey):
             raise TypeError("\"privkey\" must be of type RsaKey")
         elif not isinstance(sender, ID):
             raise TypeError("\"sender\" must be of type ID")
-        elif not isinstance(accused, ID):
-            raise TypeError("\"accused\" must be of type ID")
-        elif not isinstance(contract, Contract):
-            raise TypeError("\"contract\" must be of type Contract")
+        elif not isinstance(verdict, Verdict):
+            raise TypeError("\"verdict\" must be of type Verdict")
 
         self.__private_key = privkey
         self.__sender = sender
-        self.__accused = accused
-        self.__contract = contract
+        self.__verdict = verdict
 
         self.sign()
 
     def is_valid(self):
         if self.__sender.is_valid() is False:
-            print("Invalid Accusation: Sender's ID is not valid")
+            print("Invalid Appeal: Sender's ID is not valid")
             return False
-        elif self.__accused.is_valid() is False:
-            print("Invalid Accusation: Accused's ID is not valid")
-            return False
-        elif self.__contract.is_valid() is False:
-            print("Invalid Accusation: You must provide a valid contract")
+        elif self.__verdict.is_valid() is False:
+            print("Invalid Appeal: Verdict is not valid")
             return False
         elif compare_signature(self.__sender.to_dict()["public_key"], self.__signature,
                                self.get_content()) is False:
-            print("Invalid Accusation: Signature doesn't match public key")
+            print("Invalid Verdict: Signature doesn't match public key")
             return False
         else:
             return True
@@ -49,8 +45,7 @@ class Accusation(Transaction):
         return {
             "sender": self.__sender.to_dict(),
             "signature": self.__signature,
-            "accused": self.__accused.to_dict(),
-            "contract": self.__contract.to_dict()
+            "verdict": self.__verdict.to_dict()
         }
 
     def get_content(self) -> dict:
@@ -58,8 +53,7 @@ class Accusation(Transaction):
 
         return {
             "sender": self.__sender.to_dict(),
-            "accused": self.__accused.to_dict(),
-            "contract": self.__contract.to_dict()
+            "verdict": self.__verdict.to_dict()
         }
 
     def sign(self) -> None:
@@ -69,19 +63,19 @@ class Accusation(Transaction):
 
     @staticmethod
     def get_random(valid: bool = True) -> dict:
-        """Returns a random Accusation with it's corresponding private key"""
+        """Returns a random Appeal with it's corresponding private key"""
 
         id_info = ID.get_random(valid=valid)
         key, userid = id_info["private_key"], id_info["id"]
+        verdict = Verdict.get_random(valid=valid)["verdict"]
 
-        accusation = Accusation(
+        appeal = Appeal(
             import_key(key),
             userid,
-            ID.get_random()["id"],
-            Contract.get_random()["contract"]
+            verdict
         )
 
         return {
             "private_key": key,
-            "accusation": accusation
+            "appeal": appeal
         }
