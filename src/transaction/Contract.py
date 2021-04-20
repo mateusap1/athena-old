@@ -135,10 +135,10 @@ class Contract(Transaction):
 
         return {
             "sender": self.__sender.to_dict(),
-            "signature": self.__signature,
             "rules": self.__rules,
             "judges": [i.to_dict() for i in self.__judges],
-            "expire": str(self.__expire)
+            "expire": str(self.__expire),
+            "signature": self.__signature
         }
 
     def get_content(self) -> dict:

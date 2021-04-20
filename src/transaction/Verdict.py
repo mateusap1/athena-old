@@ -79,10 +79,10 @@ class Verdict(Transaction):
 
         return {
             "sender": self.__sender.to_dict(),
-            "signature": self.__signature,
             "accusation": self.__accusation.to_dict(),
             "sentence": self.__sentence,
-            "description": self.__description
+            "description": self.__description,
+            "signature": self.__signature
         }
 
     def get_content(self) -> dict:

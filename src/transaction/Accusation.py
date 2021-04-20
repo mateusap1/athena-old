@@ -59,9 +59,9 @@ class Accusation(Transaction):
 
         return {
             "sender": self.__sender.to_dict(),
-            "signature": self.__signature,
             "accused": self.__accused.to_dict(),
-            "contract": self.__contract.to_dict()
+            "contract": self.__contract.to_dict(),
+            "signature": self.__signature
         }
 
     def get_content(self) -> dict:

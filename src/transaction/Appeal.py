@@ -53,8 +53,8 @@ class Appeal(Transaction):
 
         return {
             "sender": self.__sender.to_dict(),
-            "signature": self.__signature,
-            "verdict": self.__verdict.to_dict()
+            "verdict": self.__verdict.to_dict(),
+            "signature": self.__signature
         }
 
     def get_content(self) -> dict:
