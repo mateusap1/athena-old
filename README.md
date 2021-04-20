@@ -36,7 +36,7 @@ A veredict must be stored by the interested parts and can be shown in communitie
 If someone disagrees with a veredict, he can still send a transaction of type **appeal**, which must include the **sender's ID** and the **veredict he disagrees with**. The two next judges of the list (after the one that condenmed him) would, after hearing both parts, make their own decisions by sending a transaction of type **veredict**. If both decisions are opposed to the one made by the first judge, he won't receive his reward and the veredict is reverted.
 
 ### Practice example
-Let's suppose, for instance, that Michael, Jim, Pam, Ryan and Dwight want to make a book club. One of them (let's say Dwight) would write a set of rules that all of them will agree with. Suppose the rules are the following:
+Let's suppose, for instance, that Michael, Jim, Pam, Ryan and Dwight want to make a books club. One of them (let's say Dwight) would write a set of rules that all of them will agree with. Suppose the rules are the following:
 
 * Every month a member must lend three books to the club
 * Any member can borrow a maximum of three books every month
