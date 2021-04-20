@@ -4,6 +4,7 @@ from identity import ID
 from config import verdict_config
 from utils import compare_signature, sign, random_word, import_key
 from Crypto.PublicKey.RSA import RsaKey
+from typing import Optional
 
 import random
 
@@ -13,9 +14,14 @@ DESCRIPTION_CHAR_LIMIT = verdict_config["description_char_limit"]
 
 
 class Verdict(Transaction):
+    sender: ID
+    accusation: Accusation
+    sentence: str
+    description: str
+    signature: Optional[str]
 
     def __init__(self, sender: ID, accusation: Accusation, sentence: str, 
-                 description: str, signature: str = None):
+                 description: str, signature: Optional[str] = None):
 
         if not isinstance(sender, ID):
             raise TypeError("\"sender\" must be of type ID")

@@ -10,6 +10,8 @@ from Crypto.PublicKey.RSA import RsaKey
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
 
+from typing import Optional, Sequence
+
 import Crypto.Random
 import binascii
 import datetime
@@ -24,15 +26,22 @@ SENDER_CAN_JUDGE = contract_config["allow_sender_to_judge"]
 
 
 class Contract(Transaction):
+    sender: ID
+    rules: Sequence[str]
+    judges: Sequence[ID]
+    expire: datetime.datetime
+    signature: Optional[str]
 
-    def __init__(self, sender: ID, rules: list, judges: list, 
-                 expire: datetime.datetime, signature: str = None):
+    def __init__(self, sender: ID, rules: Sequence[str], judges: Sequence[ID],
+                 expire: datetime.datetime, signature: Optional[str] = None):
 
         if not isinstance(sender, ID):
             raise TypeError("\"sender\" must be of type ID")
-        elif not isinstance(rules, list):
+        elif not (isinstance(rules, list) and \
+            all(isinstance(i, str) for i in rules)):
             raise TypeError("\"rules\" must be of type list")
-        elif not isinstance(judges, list):
+        elif not (isinstance(judges, list) and \
+            all(isinstance(i, ID) for i in judges)):
             raise TypeError("\"judges\" must be of type list")
         elif not isinstance(expire, datetime.datetime):
             raise TypeError("\"expire\" must be of type datetime")
@@ -141,7 +150,7 @@ class Contract(Transaction):
             "judges": [i.to_dict() for i in self.__judges],
             "expire": str(self.__expire)
         }
-    
+
     def sign(self, privkey: RsaKey) -> None:
         """Adds a signature to the transaction based on it's content"""
 

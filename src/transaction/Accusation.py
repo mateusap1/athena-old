@@ -4,12 +4,18 @@ from utils import compare_signature, import_key, sign
 from identity import ID
 
 from Crypto.PublicKey.RSA import RsaKey
+from typing import Optional
 
 
 class Accusation(Transaction):
+    sender: ID
+    accused: ID
+    contract: Contract
+    signature: Optional[str]
 
-    def __init__(self, sender: ID, accused: ID, contract: Contract, signature: str = None):
-
+    def __init__(self, sender: ID, accused: ID, contract: Contract, 
+                 signature: Optional[str] = None):
+                 
         if not isinstance(sender, ID):
             raise TypeError("\"sender\" must be of type ID")
         elif not isinstance(accused, ID):
@@ -28,7 +34,7 @@ class Accusation(Transaction):
         if self.__signature is None:
             print("Invalid Appeal: Unsigned transaction")
             return False
-            
+
         if self.__sender.is_valid() is False:
             print("Invalid Accusation: Sender's ID is not valid")
             return False
@@ -66,7 +72,7 @@ class Accusation(Transaction):
             "accused": self.__accused.to_dict(),
             "contract": self.__contract.to_dict()
         }
-    
+
     def sign(self, privkey: RsaKey) -> None:
         """Adds a signature to the transaction based on it's content"""
 

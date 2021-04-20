@@ -3,15 +3,20 @@ from transaction.Verdict import Verdict
 from identity import ID
 from config import verdict_config
 from utils import compare_signature, sign, random_word, import_key
+
 from Crypto.PublicKey.RSA import RsaKey
+from typing import Optional
 
 import random
 
 
 class Appeal(Transaction):
+    sender: ID
+    verdict: Verdict
+    signature: Optional[str]
 
-    def __init__(self, sender: ID, verdict: Verdict, signature: str = None):
-
+    def __init__(self, sender: ID, verdict: Verdict, signature: Optional[str] = None):
+        
         if not isinstance(sender, ID):
             raise TypeError("\"sender\" must be of type ID")
         elif not isinstance(verdict, Verdict):
@@ -21,23 +26,23 @@ class Appeal(Transaction):
 
         self.__sender = sender
         self.__verdict = verdict
-        self.__signature = signature 
+        self.__signature = signature
 
     def is_valid(self):
         if self.__signature is None:
             print("Invalid Appeal: Unsigned transaction")
             return False
-            
+
         if self.__sender.is_valid() is False:
             print("Invalid Appeal: Sender's ID is not valid")
             return False
-            
+
         if self.__verdict.is_valid() is False:
             print("Invalid Appeal: Verdict is not valid")
             return False
 
         if compare_signature(self.__sender.to_dict()["public_key"], self.__signature,
-                               self.get_content()) is False:
+                             self.get_content()) is False:
             print("Invalid Verdict: Signature doesn't match public key")
             return False
 
@@ -59,7 +64,7 @@ class Appeal(Transaction):
             "sender": self.__sender.to_dict(),
             "verdict": self.__verdict.to_dict()
         }
-    
+
     def sign(self, privkey: RsaKey) -> None:
         """Adds a signature to the transaction based on it's content"""
 
