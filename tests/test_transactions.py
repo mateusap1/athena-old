@@ -1,6 +1,7 @@
 import sys
 import os
 import datetime
+import pytest
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
 
@@ -52,6 +53,17 @@ def test_contract():
     c = Contract(userid, rules, judges, expire)
     c.sign(key)
     assert c.is_valid() == True
+
+    # Make sure the class raises an exception when the
+    # paramaters aren't from the correct type
+    with pytest.raises(TypeError):
+        c = Contract("User", rules, judges, expire)
+    with pytest.raises(TypeError):
+        c = Contract(userid, [1, 2, 3], judges, expire)
+    with pytest.raises(TypeError):
+        c = Contract(userid, rules, ["Miss Marple"], expire)
+    with pytest.raises(TypeError):
+        c = Contract(userid, rules, judges, "Tomorrow")
 
     content = hash_content({
         "username": "Isaac Newton",
@@ -120,6 +132,13 @@ def test_accusation():
     a.sign(key)
     assert a.is_valid() == True
 
+    with pytest.raises(TypeError):
+        a = Accusation("User", accused, contract)
+    with pytest.raises(TypeError):
+        a = Accusation(userid, "Accused", contract)
+    with pytest.raises(TypeError):
+        a = Accusation(userid, accused, {"content": "..."})
+
     content = hash_content({
         "username": "Isaac Newton",
         "public_key": parsed_pubkey
@@ -176,6 +195,15 @@ def test_verdict():
     v = Verdict(userid, accusation, sentence, description)
     v.sign(key)
     assert v.is_valid() == True
+
+    with pytest.raises(TypeError):
+        v = Verdict("User", accusation, sentence, description)
+    with pytest.raises(TypeError):
+        v = Verdict(userid, {"content": "..."}, sentence, description)
+    with pytest.raises(TypeError):
+        v = Verdict(userid, accusation, False, description)
+    with pytest.raises(TypeError):
+        v = Verdict(userid, accusation, sentence, 76)
 
     content = hash_content({
         "username": "Isaac Newton",
@@ -247,6 +275,11 @@ def test_appeal():
     a = Appeal(userid, verdict)
     a.sign(key)
     assert a.is_valid() == True
+
+    with pytest.raises(TypeError):
+        a = Appeal("User", verdict)
+    with pytest.raises(TypeError):
+        a = Appeal(userid, {"content": "..."})
 
     content = hash_content({
         "username": "Isaac Newton",
