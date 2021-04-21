@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from transaction.Transaction import Transaction
 from transaction.Verdict import Verdict
 from identity import ID
@@ -69,6 +71,29 @@ class Appeal(Transaction):
         """Adds a signature to the transaction based on it's content"""
 
         self.__signature = sign(privkey, self.get_content())
+    
+    @staticmethod
+    def import_dict(transaction: dict) -> Optional[Appeal]:
+        """Returns an instance of Appeal object
+        based on it's dictionary version"""
+        
+        keys = ["sender", "verdict", "signature"]
+        if any([not key in keys for key in transaction.keys()]):
+            print("Invalid transaction: Keys missing")
+            return None
+
+        try:
+            sender = ID(**transaction["sender"])
+        except TypeError:
+            print("Invalid transaction: Invalid sender ID")
+            return None
+        
+        verdict = Verdict.import_dict(transaction["verdict"])
+        if verdict is None:
+            print("Invalid transaction: Verdict must be valid")
+            return None
+
+        return Appeal(sender, verdict, transaction["signature"])
 
     @staticmethod
     def get_random(valid: bool = True) -> dict:

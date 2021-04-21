@@ -3,7 +3,7 @@ from __future__ import annotations
 from transaction.Transaction import Transaction
 from utils import compare_signature, parse_key, import_key, sign
 from identity import ID
-from config import contract_config
+from config import contract_config, id_config
 
 from Crypto.PublicKey import RSA
 from Crypto.PublicKey.RSA import RsaKey
@@ -23,6 +23,7 @@ MAX_JUDGES = contract_config["maximum_judges"]
 MIN_RULES = contract_config["minimum_rules"]
 MAX_RULES = contract_config["maximum_rules"]
 SENDER_CAN_JUDGE = contract_config["allow_sender_to_judge"]
+DATE_FORMAT = id_config["date_format"]
 
 
 class Contract(Transaction):
@@ -37,11 +38,11 @@ class Contract(Transaction):
 
         if not isinstance(sender, ID):
             raise TypeError("\"sender\" must be of type ID")
-        elif not (isinstance(rules, list) and \
-            all(isinstance(i, str) for i in rules)):
+        elif not (isinstance(rules, list) and
+                  all(isinstance(i, str) for i in rules)):
             raise TypeError("\"rules\" must be of type list")
-        elif not (isinstance(judges, list) and \
-            all(isinstance(i, ID) for i in judges)):
+        elif not (isinstance(judges, list) and
+                  all(isinstance(i, ID) for i in judges)):
             raise TypeError("\"judges\" must be of type list")
         elif not isinstance(expire, datetime.datetime):
             raise TypeError("\"expire\" must be of type datetime")
@@ -54,28 +55,9 @@ class Contract(Transaction):
         self.__expire = expire
         self.__signature = signature
 
-    # TODO: Remove this method, as signatures will be independent from contracts
-    def add_signature(self, private_key: str) -> str:
-        signer = PKCS1_v1_5.new(RSA.importKey(binascii.unhexlify(private_key)))
-        h = SHA256.new(str(self.get_content()).encode('utf8'))
-        signature = signer.sign(h)
-
-        hex_signature = binascii.hexlify(signature).decode('ascii')
-        self.signatures.append(hex_signature)
-
-        return hex_signature
-
-    # TODO: Remove this method, as signatures will be independent from contracts
-    def is_public_key_in(self, public_key: str) -> bool:
-        for signature in self.signatures:
-            if compare_signature(public_key, signature, str(self.get_content())):
-                return True
-
-        return False
-
     def is_valid(self):
         if self.__signature is None:
-            print("Invalid Appeal: Unsigned transaction")
+            print("Invalid Contract: Unsigned transaction")
             return False
 
         if self.__sender.is_valid() is False:
@@ -155,6 +137,34 @@ class Contract(Transaction):
         """Adds a signature to the transaction based on it's content"""
 
         self.__signature = sign(privkey, self.get_content())
+
+    @staticmethod
+    def import_dict(transaction: dict) -> Optional[Contract]:
+        keys = ["sender", "rules", "judges", "expire", "signature"]
+        if any([not key in keys for key in transaction.keys()]):
+            print("Invalid transaction: Keys missing")
+            return None
+
+        try:
+            sender = ID(**transaction["sender"])
+        except TypeError:
+            print("Invalid transaction: Invalid sender ID")
+            return None
+
+        judges = []
+        for judge in transaction["judges"]:
+            try:
+                judges.append(ID(**judge))
+            except TypeError:
+                print("Invalid transaction: Invalid judge ID")
+                return None
+
+        expire = datetime.datetime.strptime(
+            transaction["expire"], DATE_FORMAT
+        )
+
+        return Contract(sender, transaction["rules"], judges, 
+                        expire, transaction["signature"])
 
     @staticmethod
     def get_random(valid: bool = True) -> dict:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from transaction.Transaction import Transaction
 from transaction.Accusation import Accusation
 from identity import ID
@@ -7,6 +9,7 @@ from Crypto.PublicKey.RSA import RsaKey
 from typing import Optional
 
 import random
+import datetime
 
 
 SENTECE_CHAR_LIMIT = verdict_config["sentence_char_limit"]
@@ -20,7 +23,7 @@ class Verdict(Transaction):
     description: str
     signature: Optional[str]
 
-    def __init__(self, sender: ID, accusation: Accusation, sentence: str, 
+    def __init__(self, sender: ID, accusation: Accusation, sentence: str,
                  description: str, signature: Optional[str] = None):
 
         if not isinstance(sender, ID):
@@ -44,7 +47,7 @@ class Verdict(Transaction):
         if self.__signature is None:
             print("Invalid Appeal: Unsigned transaction")
             return False
-            
+
         if self.__sender.is_valid() is False:
             print("Invalid Verdict: Sender's ID is not valid")
             return False
@@ -99,6 +102,24 @@ class Verdict(Transaction):
         """Adds a signature to the transaction based on it's content"""
 
         self.__signature = sign(privkey, self.get_content())
+
+    @staticmethod
+    def import_dict(transaction: dict) -> Optional[Verdict]:
+        keys = ["sender", "accusation", "sentence", "description", "signature"]
+        if any([not key in keys for key in transaction.keys()]):
+            print("Invalid transaction: Keys missing")
+            return None
+
+        try:
+            sender = ID(**transaction["sender"])
+        except TypeError:
+            print("Invalid transaction: Invalid sender ID")
+            return None
+
+        accusation = Accusation.import_dict(transaction["accusation"])
+
+        return Verdict(sender, accusation, transaction["sentence"],
+                       transaction["description"], transaction["signature"])
 
     @staticmethod
     def get_random(valid: bool = True) -> dict:

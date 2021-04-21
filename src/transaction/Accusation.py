@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from transaction.Transaction import Transaction
 from transaction.Contract import Contract
 from utils import compare_signature, import_key, sign
@@ -77,6 +79,32 @@ class Accusation(Transaction):
         """Adds a signature to the transaction based on it's content"""
 
         self.__signature = sign(privkey, self.get_content())
+    
+    @staticmethod
+    def import_dict(transaction: dict) -> Optional[Accusation]:
+        keys = ["sender", "accused", "contract", "signature"]
+        if any([not key in keys for key in transaction.keys()]):
+            print("Invalid transaction: Keys missing")
+            return None
+
+        try:
+            sender = ID(**transaction["sender"])
+        except TypeError:
+            print("Invalid transaction: Invalid sender ID")
+            return None
+        
+        try:
+            accused = ID(**transaction["accused"])
+        except TypeError:
+            print("Invalid transaction: Invalid accused ID")
+            return None
+
+        contract = Contract.import_dict(transaction["contract"])
+        if contract is None:
+            print("Invalid transaction: Contract must be valid")
+            return None
+
+        return Accusation(sender, accused, contract, transaction["signature"])
 
     @staticmethod
     def get_random(valid: bool = True) -> dict:
