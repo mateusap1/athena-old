@@ -3,7 +3,6 @@ from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
 from Crypto.PublicKey.RSA import RsaKey
 
-from config import id_config
 from collections import Counter
 
 import Crypto.Random
@@ -13,11 +12,6 @@ import json
 import datetime
 import random
 import string
-
-
-HASH_DIFFICULTY = id_config["hash_difficulty"]
-NONCE_LIMIT = id_config["nonce_limit"]
-USERNAME_LIMIT = id_config["username_char_limit"]
 
 
 def create_key() -> RSA.RsaKey:

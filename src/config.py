@@ -7,7 +7,7 @@ id_config = {
     "username_char_limit": 64,
     "nonce_limit": 10**6,
     "date_format": "%Y-%m-%d %H:%M:%S.%f",
-    "hash_difficulty": 5
+    "hash_difficulty": 2
 }
 
 contract_config = {
@@ -24,5 +24,7 @@ verdict_config = {
 }
 
 node_config = {
-    "transactions_daylimit": 5
+    "transactions_limit": 10,
+    "transactions_expire_days": 2,
+    "max_transactions": 100
 }
