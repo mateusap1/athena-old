@@ -1,2 +1,4 @@
-scikit-learn
-pycryptodome
+scikit-learn==0.24.1
+pycryptodome==3.9.9
+Flask==1.1.2
+Flask-APScheduler==1.12.2
