@@ -3,6 +3,7 @@
   "transactions": {
     "30819f300d06092a864886f70d010101050003818d0030818902818100af39d95de2fbd23c960266737991ee306f2751a1704c0009bf5aad7cd821606d55ebe6f6793d3d67633dede468e51c22d40ddc2d25461d25530a684f4af68cc3591c86a9b2e5244face1f9f19e52bd2599cd28d132d855603188f26d27bac53f746fcc41367d95e04b23f53c36e7717e313e4064ab8cc69bf01c2bf50ace4ced0203010001": [
       {
+        "type": "contract",
         "content": {
           "expire": "2021-04-27 09:51:41.670871",
           "judges": [
@@ -39,6 +40,7 @@
         ]
       },
       {
+        "type": "contract",
         "content": {
           "expire": "2021-04-27 09:51:41.670871",
           "judges": [
@@ -77,6 +79,7 @@
     ],
     "30819f300d06092a864886f70d010101050003818d0030818902818100ba7a854a90d29261865057ff70992781ac494479005a6de6216e0a4b9f0e23a3c25e178058757e17dc0b6135836e6ed814e1915305d3842d83fecf0b043e6d25505042182688538c11b8c339727f7e4d085d1777aa4d0c0d4577ca0b7bdc252f3fd25506ae946a8b3b55471a0351ab0cc4c27bf426c10208a95d4c5e5a335fd10203010001": [
       {
+        "type": "appeal",
         "content": {
           "sender": {
             "hash_value": "00132d5f64b575755fa710c7c84ee85413666f1ea61df45176ffe7e42618b5a3",
@@ -152,6 +155,7 @@
         ]
       },
       {
+        "type": "appeal",
         "content": {
           "sender": {
             "hash_value": "00132d5f64b575755fa710c7c84ee85413666f1ea61df45176ffe7e42618b5a3",
