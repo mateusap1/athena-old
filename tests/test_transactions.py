@@ -46,24 +46,21 @@ def test_contract():
     assert c.is_valid() == False
 
     judges = [ID("Agatha Christie", parsed_pubkey) for _ in range(MIN_JUDGES)]
-    rules = ["rule" for _ in range(MIN_RULES)]
+    rule = {
+        "content": "You shall not kill",
+        "sentence": "Some really bad thing",
+        "reward": {
+            "value": 1000,
+            "currency": "Nano"
+        }
+    }
+    rules = [rule for _ in range(MIN_RULES)]
     expire = datetime.datetime.now() + datetime.timedelta(days=1)
 
     # Should be valid as well
     c = Contract(userid, rules, judges, expire)
     c.sign(key)
     assert c.is_valid() == True
-
-    # Make sure the class raises an exception when the
-    # paramaters aren't from the correct type
-    with pytest.raises(TypeError):
-        c = Contract("User", rules, judges, expire)
-    with pytest.raises(TypeError):
-        c = Contract(userid, [1, 2, 3], judges, expire)
-    with pytest.raises(TypeError):
-        c = Contract(userid, rules, ["Miss Marple"], expire)
-    with pytest.raises(TypeError):
-        c = Contract(userid, rules, judges, "Tomorrow")
 
     content = hash_content({
         "username": "Isaac Newton",
@@ -120,7 +117,15 @@ def test_accusation():
     assert a.is_valid() == False
 
     judges = [ID.get_random()["id"] for _ in range(MIN_JUDGES)]
-    rules = ["rule" for _ in range(MIN_RULES)]
+    rule = {
+        "content": "You shall not kill",
+        "sentence": "Some really bad thing",
+        "reward": {
+            "value": 1000,
+            "currency": "Nano"
+        }
+    }
+    rules = [rule for _ in range(MIN_RULES)]
     expire = datetime.datetime.now() + datetime.timedelta(days=1)
 
     contract = Contract(userid, rules, judges, expire)
@@ -180,7 +185,15 @@ def test_verdict():
     assert v.is_valid() == False
 
     judges = [ID.get_random()["id"] for _ in range(MIN_JUDGES)]
-    rules = ["rule" for _ in range(MIN_RULES)]
+    rule = {
+        "content": "You shall not kill",
+        "sentence": "Some really bad thing",
+        "reward": {
+            "value": 1000,
+            "currency": "Nano"
+        }
+    }
+    rules = [rule for _ in range(MIN_RULES)]
     expire = datetime.datetime.now() + datetime.timedelta(days=1)
     contract = Contract(userid, rules, judges, expire)
     contract.sign(key)
@@ -255,7 +268,15 @@ def test_appeal():
     assert a.is_valid() == False
 
     judges = [ID.get_random()["id"] for _ in range(MIN_JUDGES)]
-    rules = ["rule" for _ in range(MIN_RULES)]
+    rule = {
+        "content": "You shall not kill",
+        "sentence": "Some really bad thing",
+        "reward": {
+            "value": 1000,
+            "currency": "Nano"
+        }
+    }
+    rules = [rule for _ in range(MIN_RULES)]
     expire = datetime.datetime.now() + datetime.timedelta(days=1)
 
     contract = Contract(userid, rules, judges, expire)
