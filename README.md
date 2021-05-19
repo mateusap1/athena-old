@@ -1,6 +1,8 @@
 # Athena
 Athena is a decentralized and voluntary justice system, which main focus is to offer a better solution to conflicts that may occur inside a community. The target audience is any group of people who agreed to follow a set of rules and want to have a way of moderating possible conflicts.
 
+** Disclaimer: The current version is just a prototype, the code, in it's current state, is far from usable
+
 For inspiration: 
 
 * https://medium.com/kleros/kleros-a-decentralized-justice-protocol-for-the-internet-38d596a6300d
